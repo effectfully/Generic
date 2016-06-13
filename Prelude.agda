@@ -72,8 +72,8 @@ instance
   ,-inst : ∀ {α β} {A : Set α} {B : A -> Set β} {{x : A}} {{y : B x}} -> Σ A B
   ,-inst {{x}} {{y}} = x , y
 
-  natEq : Eq ℕ
-  natEq = record { _≟_ = go } where
+  ℕEq : Eq ℕ
+  ℕEq = record { _≟_ = go } where
     suc-inj : ∀ {n m} -> suc n ≡ suc m -> n ≡ m
     suc-inj refl = refl
 

@@ -32,7 +32,7 @@ elimVec P f z (x ∷ᵥ xs) = f x (elimVec P f z xs)
 xs : Vec ℕ 3
 xs = 2 ∷ᵥ 3 ∷ᵥ 0 ∷ᵥ []ᵥ
 
-test : _≟_ {{DescEq {{tt , (natEq , λ _ -> natEq , _) , tt}}}} xs xs ≡ yes refl
+test : _≟_ {{DescEq {{tt , (ℕEq , λ _ -> ℕEq , _) , tt}}}} xs xs ≡ yes refl
 test = refl
 
 -- An internal error has occurred. Please report this as a bug.
