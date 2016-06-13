@@ -1,7 +1,7 @@
 module Generic.Examples.Test where
 
-open import Generic.Prelude
 open import Generic.Core
+open import Generic.Property.Eq
 
 infixr 5 _∷ᵥ_
 
