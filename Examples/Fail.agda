@@ -1,4 +1,4 @@
-module Generic.Examples.Test where
+module Generic.Examples.Fail where
 
 open import Generic.Core
 open import Generic.Property.Eq
