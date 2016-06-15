@@ -9,7 +9,7 @@ SemEq (D ⊛ E) = SemEq D × SemEq E
 
 ExtendEq : ∀ {i β s} {I : Set i} -> Desc I β s -> Set β
 ExtendEq (var i) = ⊤
-ExtendEq (π b P) = transform P λ A D -> Eq A × ∀ {x} -> ExtendEq (D x)
+ExtendEq (π b P) = Transform P λ A D -> Eq A × ∀ {x} -> ExtendEq (D x)
 ExtendEq (D ⊛ E) = SemEq D × ExtendEq E
 
 instance
@@ -35,8 +35,8 @@ instance
       decAny : ∀ {j}
              -> (Ds : Data I β) {{eqDs : All ExtendEq Ds}}
              -> IsSet (Any (λ D -> Extend D (μ Ds₀) j) Ds)
-      decAny  []                         () ()
-      decAny (D ∷ [])     {{eqD , tt  }} e₁ e₂ = decExtend D {{eqD}} e₁ e₂
+      decAny  []                          ()        ()
+      decAny (D ∷ [])     {{eqD , tt  }}  e₁        e₂       = decExtend D {{eqD}} e₁ e₂
       decAny (D ∷ E ∷ Ds) {{eqD , eqDs}} (inj₁ e₁) (inj₁ e₂) =
         dcong inj₁ inj₁-inj (decExtend D {{eqD}} e₁ e₂)
       decAny (D ∷ E ∷ Ds) {{eqD , eqDs}} (inj₂ a₁) (inj₂ a₂) =

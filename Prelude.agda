@@ -17,6 +17,9 @@ data ⊥ {α} : Set α where
 record ⊤ {α} : Set α where
   constructor tt
 
+⊥₀ = ⊥ {lzero}
+⊤₀ = ⊤ {lzero}
+
 record Apply {α β} {A : Set α} (B : A -> Set β) x : Set β where
   constructor tag
   field detag : B x
@@ -45,7 +48,7 @@ All B  []      = ⊤
 All B (x ∷ xs) = B x × All B xs
 
 findInd : ∀ {ι α β} {I : Set ι} {A : I -> Set α} {B : ∀ {i} -> A i -> Set β}
-       -> (xs : IList A) -> (a : Any B xs) -> I
+        -> (xs : IList A) -> (a : Any B xs) -> I
 findInd  []                       ()
 findInd (_∷_ {i = i} x  [])       z       = i
 findInd (_∷_ {i = i} x (y ∷ xs)) (inj₁ z) = i

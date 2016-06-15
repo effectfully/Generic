@@ -2,6 +2,8 @@ module Generic.Core where
 
 open import Generic.Prelude public
 
+infixr 5 _⇒_ _⊛_
+
 Pi : ∀ {α β} -> Bool -> (A : Set α) -> (A -> Set β) -> Set (α ⊔ β)
 Pi true  A B = (x : A) -> B x
 Pi false A B = {x : A} -> B x
@@ -52,17 +54,9 @@ split : ∀ {α β γ δ} {A : Set α} {B : A -> Set β} {C : Set γ} {q : α �
       -> Coerce q (Σ A B) -> (∀ x -> B x -> C) -> C
 split {q = q} p = split′ q (detag p)
 
--- split : ∀ {α β γ δ} {A : Set α} {B : A -> Set β} {C : Set γ} {q : α ⊔ β ≡ δ}
---       -> Coerce q (Σ A B) -> (∀ x -> B x -> C) -> C
--- split p g = uncurry g (uncoerce p)
-
--- split′ : ∀ {α β γ δ} {A : Set α} {B : A -> Set β} {C : Set γ}
---        -> (q : α ⊔ β ≡ δ) -> Coerce′ q (Σ A B) -> (∀ x -> B x -> C) -> C
--- split′ q p = split (tagWith q p)
-
-transform : ∀ {α β γ δ ε} {A : Set α} {B : A -> Set β} {q₁ : α ⊔ β ≡ γ} {{q₂ : δ ≡ ε}}
+Transform : ∀ {α β γ δ ε} {A : Set α} {B : A -> Set β} {q₁ : α ⊔ β ≡ γ} {{q₂ : δ ≡ ε}}
           -> Coerce q₁ (Σ A B) -> (∀ x -> B x -> Set δ) -> Set ε
-transform {{q₂}} p C = split p λ x y -> Coerce′ q₂ (C x y)
+Transform {{q₂}} p C = split p λ x y -> Coerce′ q₂ (C x y)
 
 splitWith₂ : ∀ {α β γ δ} {A : Set α} {B : A -> Set β}
            -> (q : α ⊔ β ≡ δ)
@@ -77,26 +71,25 @@ data Shape : Set where
   πˢ   : Shape -> Shape
   _⊛ˢ_ : Shape -> Shape -> Shape 
 
-module _ {ι} (I : Set ι) β where
-  data Desc : Shape -> Set (ι ⊔ lsuc β) where
-    var : I -> Desc varˢ
-    π   : ∀ {α s} {{q : α ⊔ β ≡ β}}
-        -> Bool
-        -> Coerce (cong (λ αβ -> ι ⊔ lsuc αβ) q) (∃ λ (A : Set α) -> A -> Desc s)
-        -> Desc (πˢ s)
-    _⊛_ : ∀ {s t} -> Desc s -> Desc t -> Desc (s ⊛ˢ t)
+data Desc {ι} (I : Set ι) β : Shape -> Set (ι ⊔ lsuc β) where
+  var : I -> Desc I β varˢ
+  π   : ∀ {α s} {{q : α ⊔ β ≡ β}}
+      -> Bool
+      -> Coerce (cong (λ αβ -> ι ⊔ lsuc αβ) q) (∃ λ (A : Set α) -> A -> Desc I β s)
+      -> Desc I β (πˢ s)
+  _⊛_ : ∀ {s t} -> Desc I β s -> Desc I β t -> Desc I β (s ⊛ˢ t)
 
 pattern pi  A D = π true  (tag (A , D))
 pattern ipi A D = π false (tag (A , D))
 
 ⟦_⟧ : ∀ {ι β s} {I : Set ι} -> Desc I β s -> (I -> Set β) -> Set β
 ⟦ var i ⟧ B = B i
-⟦ π b P ⟧ B = transform P λ A D -> Pi b A λ x -> ⟦ D x ⟧ B
+⟦ π b P ⟧ B = Transform P λ A D -> Pi b A λ x -> ⟦ D x ⟧ B
 ⟦ D ⊛ E ⟧ B = ⟦ D ⟧ B × ⟦ E ⟧ B
 
 Extend : ∀ {ι β s} {I : Set ι} -> Desc I β s -> (I -> Set β) -> I -> Set β
 Extend (var i) B j = Lift (i ≡ j)
-Extend (π b P) B j = transform P λ A D -> ∃ λ x -> Extend (D x) B j
+Extend (π b P) B j = Transform P λ A D -> ∃ λ x -> Extend (D x) B j
 Extend (D ⊛ E) B j = ⟦ D ⟧ B × Extend E B j
 
 Data : ∀ {ι} -> Set ι -> ∀ β -> Set (ι ⊔ lsuc β)
@@ -113,3 +106,27 @@ data μ {ι β} {I : Set ι} (Ds : Data I β) j : Set β where
 node-inj : ∀ {i β} {I : Set i} {Ds : Data I β} {j} {e₁ e₂ : Any (λ D -> Extend D (μ Ds) j) Ds}
          -> node {Ds = Ds} e₁ ≡ node e₂ -> e₁ ≡ e₂
 node-inj refl = refl
+
+_⇒_ : ∀ {ι α β s} {I : Set ι} {{q : α ⊔ β ≡ β}}
+    -> (A : Set α) -> Desc I β s -> Desc I β (πˢ s)
+A ⇒ D = π true (coerce (A , λ _ -> D))
+
+μ′ : ∀ {β} -> Data ⊤₀ β -> Set β
+μ′ Ds = μ Ds tt
+
+pos : ∀ {β} -> Desc ⊤₀ β varˢ
+pos = var tt
+
+pattern #₀ p = node (inj₁ p)
+pattern #₁ p = node (inj₂ (inj₁ p))
+pattern #₂ p = node (inj₂ (inj₂ (inj₁ p)))
+pattern #₃ p = node (inj₂ (inj₂ (inj₂ (inj₁ p))))
+pattern #₄ p = node (inj₂ (inj₂ (inj₂ (inj₂ (inj₁ p)))))
+pattern #₅ p = node (inj₂ (inj₂ (inj₂ (inj₂ (inj₂ (inj₁ p))))))
+
+pattern !#₀ p = node p
+pattern !#₁ p = node (inj₂ p)
+pattern !#₂ p = node (inj₂ (inj₂ p))
+pattern !#₃ p = node (inj₂ (inj₂ (inj₂ p)))
+pattern !#₄ p = node (inj₂ (inj₂ (inj₂ (inj₂ p))))
+pattern !#₅ p = node (inj₂ (inj₂ (inj₂ (inj₂ (inj₂ p)))))
