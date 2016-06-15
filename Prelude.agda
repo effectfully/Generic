@@ -44,6 +44,27 @@ All : ∀ {ι α β} {I : Set ι} {A : I -> Set α} -> (∀ {i} -> A i -> Set β
 All B  []      = ⊤
 All B (x ∷ xs) = B x × All B xs
 
+findInd : ∀ {ι α β} {I : Set ι} {A : I -> Set α} {B : ∀ {i} -> A i -> Set β}
+       -> (xs : IList A) -> (a : Any B xs) -> I
+findInd  []                       ()
+findInd (_∷_ {i = i} x  [])       z       = i
+findInd (_∷_ {i = i} x (y ∷ xs)) (inj₁ z) = i
+findInd (x ∷ y ∷ xs)             (inj₂ a) = findInd (y ∷ xs) a
+
+findEl : ∀ {ι α β} {I : Set ι} {A : I -> Set α} {B : ∀ {i} -> A i -> Set β}
+       -> (xs : IList A) -> (a : Any B xs) -> A (findInd xs a)
+findEl  []           ()
+findEl (x ∷ [])      z       = x
+findEl (x ∷ y ∷ xs) (inj₁ z) = x
+findEl (x ∷ y ∷ xs) (inj₂ a) = findEl (y ∷ xs) a
+
+find : ∀ {ι α β} {I : Set ι} {A : I -> Set α} {B : ∀ {i} -> A i -> Set β}
+     -> (xs : IList A) -> (a : Any B xs) -> B (findEl xs a)
+find  []           ()
+find (x ∷ [])      z       = z
+find (x ∷ y ∷ xs) (inj₁ z) = z
+find (x ∷ y ∷ xs) (inj₂ a) = find (y ∷ xs) a
+
 ,-inj : ∀ {α β} {A : Set α} {B : A -> Set β} {x₁ x₂} {y₁ : B x₁} {y₂ : B x₂}
       -> (x₁ , y₁) ≡ (x₂ , y₂) -> [ B ] y₁ ≅ y₂
 ,-inj refl = irefl
