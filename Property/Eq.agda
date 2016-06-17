@@ -26,7 +26,7 @@ instance
       decExtend : ∀ {s j} -> (D : Desc I β s) {{eqD : ExtendEq D}} -> IsSet (Extend D (μ Ds₀) j)
       decExtend (var i)                      lrefl     lrefl    = yes refl
       decExtend (π {{q}} b P) {{eqP}}        p₁        p₂       =
-        split′ q eqP λ eqA eqD ->
+        split′ eqP λ eqA eqD ->
           splitWith₂ q _#_ p₁ p₂ λ x₁ x₂ e₁ e₂ ->
             _≟_ {{eqA}} x₁ x₂ <,>ᵈᵒ decExtend (unproj₂ P x₁) {{eqD}} e₁
       decExtend (D ⊛ E)       {{eqD , eqE}} (x₁ , e₁) (x₂ , e₂) =
