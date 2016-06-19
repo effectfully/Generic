@@ -17,8 +17,8 @@ Elim : ∀ {ι β γ s} {I : Set ι} {B}
 Elim {β = β} C (var i)       k = Lift {ℓ = β} (C (k lrefl))
 Elim {γ = γ} C (π {{q}} b P) k =
   Coerce′ (cong (γ ⊔_) q) (Pi b _ λ x -> Elim C (unproj₂ P x) (k ∘ coerce′ ∘ _,_ x))
-Elim         C (var i ⊛ E)       k = ∀ {x} -> C x -> Elim C E (k ∘ _,_ x)
-Elim         C (D     ⊛ E)       k = ∀ {x} -> Hyp C D x -> Elim C E (k ∘ _,_ x)
+Elim         C (var i ⊛ E)   k = ∀ {x} -> C x -> Elim C E (k ∘ _,_ x)
+Elim         C (D     ⊛ E)   k = ∀ {x} -> Hyp C D x -> Elim C E (k ∘ _,_ x)
 
 -- Dang.
 IAllAny : ∀ {ι κ α β γ δ} {I : Set ι} {J : Set κ} {A : I -> Set α} {C : J -> Set γ}
