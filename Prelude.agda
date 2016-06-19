@@ -29,9 +29,12 @@ tagWith : ∀ {α β} {A : Set α} {B : A -> Set β} x -> B x -> Apply B x
 tagWith x = tag
 
 record Eq {α} (A : Set α) : Set α where
-  infixl 5 _≟_
+  infixl 5 _≟_ _==_
 
   field _≟_ : IsSet A
+
+  _==_ : A -> A -> Bool
+  x == y = ⌊ x ≟ y ⌋ 
 open Eq {{...}} public
 
 data IList {ι α} {I : Set ι} (A : I -> Set α) : Set (ι ⊔ α) where
