@@ -11,8 +11,6 @@ open import Generic.Lib.Propositional public
 open import Generic.Lib.Heteroindexed public
 open import Generic.Lib.Decidable hiding (map) public
 
-infixr 5 _∷_
-
 data ⊥ {α} : Set α where
 record ⊤ {α} : Set α where
   constructor tt
@@ -37,40 +35,6 @@ record Eq {α} (A : Set α) : Set α where
   x == y = ⌊ x ≟ y ⌋ 
 open Eq {{...}} public
 
-data IList {ι α} {I : Set ι} (A : I -> Set α) : Set (ι ⊔ α) where
-  []  : IList A
-  _∷_ : ∀ {i} -> A i -> IList A -> IList A
-
-Any : ∀ {ι α β} {I : Set ι} {A : I -> Set α} -> (∀ {i} -> A i -> Set β) -> IList A -> Set β
-Any B  []      = ⊥
-Any B (x ∷ []) = B x
-Any B (x ∷ xs) = B x ⊎ Any B xs
-
-All : ∀ {ι α β} {I : Set ι} {A : I -> Set α} -> (∀ {i} -> A i -> Set β) -> IList A -> Set β
-All B  []      = ⊤
-All B (x ∷ xs) = B x × All B xs
-
-findInd : ∀ {ι α β} {I : Set ι} {A : I -> Set α} {B : ∀ {i} -> A i -> Set β}
-        -> (xs : IList A) -> (a : Any B xs) -> I
-findInd  []                       ()
-findInd (_∷_ {i = i} x  [])       z       = i
-findInd (_∷_ {i = i} x (y ∷ xs)) (inj₁ z) = i
-findInd (x ∷ y ∷ xs)             (inj₂ a) = findInd (y ∷ xs) a
-
-findEl : ∀ {ι α β} {I : Set ι} {A : I -> Set α} {B : ∀ {i} -> A i -> Set β}
-       -> (xs : IList A) -> (a : Any B xs) -> A (findInd xs a)
-findEl  []           ()
-findEl (x ∷ [])      z       = x
-findEl (x ∷ y ∷ xs) (inj₁ z) = x
-findEl (x ∷ y ∷ xs) (inj₂ a) = findEl (y ∷ xs) a
-
-find : ∀ {ι α β} {I : Set ι} {A : I -> Set α} {B : ∀ {i} -> A i -> Set β}
-     -> (xs : IList A) -> (a : Any B xs) -> B (findEl xs a)
-find  []           ()
-find (x ∷ [])      z       = z
-find (x ∷ y ∷ xs) (inj₁ z) = z
-find (x ∷ y ∷ xs) (inj₂ a) = find (y ∷ xs) a
-
 ,-inj : ∀ {α β} {A : Set α} {B : A -> Set β} {x₁ x₂} {y₁ : B x₁} {y₂ : B x₂}
       -> (x₁ , y₁) ≡ (x₂ , y₂) -> [ B ] y₁ ≅ y₂
 ,-inj refl = irefl
@@ -94,6 +58,12 @@ _<,>ᵈ_ = dcong₂ _,_ (inds-homo ∘ ,-inj)
 _<,>ᵈᵒ_ : ∀ {α β} {A : Set α} {B : A -> Set β} {x₁ x₂} {y₁ : B x₁} {y₂ : B x₂}
         -> x₁ # x₂ -> (∀ y₂ -> y₁ # y₂) -> x₁ , y₁ # x₂ , y₂
 _<,>ᵈᵒ_ = dhcong₂ _,_ ,-inj
+
+decSum : ∀ {α β} {A : Set α} {B : Set β} -> IsSet A -> IsSet B -> IsSet (A ⊎ B)
+decSum f g (inj₁ x₁) (inj₁ x₂) = dcong inj₁ inj₁-inj (f x₁ x₂)
+decSum f g (inj₂ y₁) (inj₂ y₂) = dcong inj₂ inj₂-inj (g y₁ y₂)
+decSum f g (inj₁ x₁) (inj₂ y₂) = no λ()
+decSum f g (inj₂ y₁) (inj₁ x₂) = no λ()
 
 instance
   ,-inst : ∀ {α β} {A : Set α} {B : A -> Set β} {{x : A}} {{y : B x}} -> Σ A B

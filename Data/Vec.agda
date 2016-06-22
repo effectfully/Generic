@@ -7,8 +7,7 @@ infixr 5 _∷ᵥ_
 Vec : ∀ {α} -> Set α -> ℕ -> Set α
 Vec A = μ
       $ var 0
-      ∷ (ipi ℕ λ n -> A ⇒ var n ⊛ var (suc n))
-      ∷ []
+      ⊕ (ipi ℕ λ n -> A ⇒ var n ⊛ var (suc n))
 
 -- []ᵥ : ∀ {α} {A : Set α} -> Vec A 0
 pattern []ᵥ = #₀ lrefl

@@ -6,9 +6,8 @@ infixr 5 _∷ₗ_ _∷ₗ′_
 
 List : ∀ {α} -> Set α -> Set α
 List A = μ′
-      $ pos
-      ∷ (A ⇒ pos ⊛ pos)
-      ∷ []
+       $ pos
+       ⊕ (A ⇒ pos ⊛ pos)
 
 pattern []ₗ       = #₀ lrefl
 pattern _∷ₗ_ x xs = !#₁ (x , xs , lrefl)

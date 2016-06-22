@@ -5,8 +5,7 @@ open import Generic.Core
 Fin : ℕ -> Set
 Fin = μ
     $ (ipi ℕ λ n -> var (suc n))
-    ∷ (ipi ℕ λ n -> var n ⊛ var (suc n))
-    ∷ []
+    ⊕ (ipi ℕ λ n -> var n ⊛ var (suc n))
 
 pattern fzero {n}   = #₀  (n , lrefl)
 pattern fsuc  {n} i = !#₁ (n , i , lrefl)

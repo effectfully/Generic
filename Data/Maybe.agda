@@ -5,8 +5,7 @@ open import Generic.Core
 Maybe : ∀ {α} -> Set α -> Set α
 Maybe A = μ′
         $ pos
-        ∷ (A ⇒ pos)
-        ∷ []
+        ⊕ (A ⇒ pos)
 
 pattern nothing = #₀   lrefl
 pattern just x  = !#₁ (x , lrefl)

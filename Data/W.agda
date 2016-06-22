@@ -4,8 +4,7 @@ open import Generic.Core
 
 W : ∀ {α β} -> (A : Set α) -> (A -> Set β) -> Set (α ⊔ β)
 W A B = μ′
-      $ (pi A λ x -> (B x ⇒ pos) ⊛ pos)
-      ∷ []
+      $ pi A λ x -> (B x ⇒ pos) ⊛ pos
 
 pattern sup x g = !#₀ (x , g , lrefl)
 
