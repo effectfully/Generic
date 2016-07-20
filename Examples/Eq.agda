@@ -9,9 +9,9 @@ open import Generic.Data.List
 open import Generic.Data.Vec
 
 xs : Vec (List (Fin 4)) 3
-xs = (fsuc fzero ∷ₗ fzero ∷ₗ []ₗ)
-   ∷ᵥ (fsuc (fsuc fzero) ∷ₗ []ₗ)
-   ∷ᵥ (fzero ∷ₗ fsuc (fsuc (fsuc fzero)) ∷ₗ []ₗ)
+xs = (fsuc fzero ∷ fzero ∷ [])
+   ∷ᵥ (fsuc (fsuc fzero) ∷ [])
+   ∷ᵥ (fzero ∷ fsuc (fsuc (fsuc fzero)) ∷ [])
    ∷ᵥ []ᵥ
 
 test : xs ≟ xs ≡ yes refl
