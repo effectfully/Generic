@@ -8,7 +8,7 @@ Maybe A = μ′
         ⊕ (A ⇒ pos)
 
 pattern nothing = #₀   lrefl
-pattern just x  = !#₁ (x ,′ lrefl)
+pattern just x  = !#₁ (x , lrefl)
 
 nothing′ : ∀ {α} {A : Set α} -> Maybe A
 nothing′ = nothing

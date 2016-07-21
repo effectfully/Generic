@@ -6,7 +6,7 @@ W : ∀ {α β} -> (A : Set α) -> (A -> Set β) -> Set (α ⊔ β)
 W A B = μ′
       $ pi A λ x -> (B x ⇒ pos) ⊛ pos
 
-pattern sup x g = !#₀ (x ,′ coerce g , lrefl)
+pattern sup x g = !#₀ (x , g , lrefl)
 
 elimW : ∀ {α β π} {A : Set α} {B : A -> Set β}
       -> (P : W A B -> Set π)

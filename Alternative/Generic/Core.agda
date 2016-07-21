@@ -7,7 +7,6 @@ open import Generic.Prelude public
 
 infix  4 _≤ℓ_
 infixr 5 _⇒_ _⊕_ _⊛_
-infixr 4 _,′_
 
 _≤ℓ_ : Level -> Level -> Set
 α ≤ℓ β = α ⊔ β ≡ β
@@ -26,6 +25,9 @@ lam false f = f _
 apply : ∀ {α β} {A : Set α} {B : A -> Set β} b -> Pi b A B -> ∀ x -> B x
 apply true  f x = f x
 apply false y x = y
+
+Coerce′ : ∀ {α β} -> α ≡ β -> Set α -> Set β
+Coerce′ refl = id
 
 data Coerce {β} : ∀ {α} -> α ≡ β -> Set α -> Set β where
   coerce : ∀ {A} -> A -> Coerce refl A
@@ -58,7 +60,7 @@ mutual
 
   ⟦_⟧ᶜ : ∀ {α ι β γ q} {I : Set ι}
        -> Binder α β γ q I -> α ≤ℓ β -> Bool -> (I -> Set β) -> Set β
-  ⟦ coerce (A , D) ⟧ᶜ q b B = Coerce q $ Pi b A λ x -> ⟦ D x ⟧ B
+  ⟦ coerce (A , D) ⟧ᶜ q b B = Coerce′ q $ Pi b A λ x -> ⟦ D x ⟧ B
 
 mutual
   Extend : ∀ {ι β} {I : Set ι} -> Desc I β -> (I -> Set β) -> I -> Set β
@@ -69,7 +71,7 @@ mutual
 
   Extendᶜ : ∀ {α ι β γ q} {I : Set ι}
           -> Binder α β γ q I -> α ≤ℓ β -> Bool -> (I -> Set β) -> I -> Set β
-  Extendᶜ (coerce (A , D)) q b B j = Coerce q $ ∃ λ x -> Extend (D x) B j
+  Extendᶜ (coerce (A , D)) q b B j = Coerce′ q $ ∃ λ x -> Extend (D x) B j
 
 module _ {ι β} {I : Set ι} (D : Desc I β) where
   mutual
@@ -102,5 +104,3 @@ pattern !#₂ p = node (inj₂ (inj₂ p))
 pattern !#₃ p = node (inj₂ (inj₂ (inj₂ p)))
 pattern !#₄ p = node (inj₂ (inj₂ (inj₂ (inj₂ p))))
 pattern !#₅ p = node (inj₂ (inj₂ (inj₂ (inj₂ (inj₂ p)))))
-
-pattern _,′_ x y = coerce (x , y)

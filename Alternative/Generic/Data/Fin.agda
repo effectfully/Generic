@@ -7,8 +7,8 @@ Fin = μ
     $ (ipi ℕ λ n -> var (suc n))
     ⊕ (ipi ℕ λ n -> var n ⊛ var (suc n))
 
-pattern fzero {n}   = #₀  (n ,′ lrefl)
-pattern fsuc  {n} i = !#₁ (n ,′ i , lrefl)
+pattern fzero {n}   = #₀  (n , lrefl)
+pattern fsuc  {n} i = !#₁ (n , i , lrefl)
 
 elimFin : ∀ {n π}
         -> (P : ∀ {n} -> Fin n -> Set π)

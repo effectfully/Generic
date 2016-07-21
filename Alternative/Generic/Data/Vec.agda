@@ -13,7 +13,7 @@ Vec A = μ
 pattern []ᵥ = #₀ lrefl
 
 -- _∷ᵥ_ : ∀ {n α} {A : Set α} -> A -> Vec A n -> Vec A (suc n)
-pattern _∷ᵥ_ {n} x xs = !#₁ (n ,′ x ,′ xs , lrefl)
+pattern _∷ᵥ_ {n} x xs = !#₁ (n , x , xs , lrefl)
 
 elimVec : ∀ {n α π} {A : Set α}
         -> (P : ∀ {n} -> Vec A n -> Set π)

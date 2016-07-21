@@ -10,7 +10,7 @@ List A = μ′
        ⊕ (A ⇒ pos ⊛ pos)
 
 pattern []       = #₀ lrefl
-pattern _∷_ x xs = !#₁ (x ,′ xs , lrefl)
+pattern _∷_ x xs = !#₁ (x , xs , lrefl)
 
 _∷′_ : ∀ {α} {A : Set α} -> A -> List A -> List A
 _∷′_ = _∷_
@@ -68,11 +68,10 @@ zipWith f _        _        = []
 zip : ∀ {a b} {A : Set a} {B : Set b} → List A → List B → List (A × B)
 zip = zipWith (_,_)
 
-{-# TERMINATING #-} -- Oops.
 intersperse : ∀ {a} {A : Set a} → A → List A → List A
 intersperse x []           = []
 intersperse x (y ∷ [])     = [ y ]
-intersperse x (y ∷ z ∷ zs) = y ∷ x ∷′ intersperse x (z ∷ zs)
+intersperse x (y ∷ z ∷ zs) = y ∷ x ∷ intersperse x (z ∷ zs)
 
 -- * Reducing lists (folds)
 
@@ -128,7 +127,7 @@ scanr : ∀ {a b} {A : Set a} {B : Set b} →
 scanr f e []       = e ∷ []
 scanr f e (x ∷ xs) with scanr f e xs
 ... | []     = []                -- dead branch
-... | y ∷ ys = f x y ∷ y ∷′ ys
+... | y ∷ ys = f x y ∷ y ∷ ys
 
 scanl : ∀ {a b} {A : Set a} {B : Set b} →
         (A → B → A) → A → List B → List A
@@ -211,7 +210,7 @@ inits (x ∷ xs) = [] ∷ map (_∷′_ x) (inits xs)
 
 tails : ∀ {a} {A : Set a} → List A → List (List A)
 tails []       = [] ∷ []
-tails (x ∷ xs) = (x ∷′ xs) ∷ tails xs
+tails (x ∷ xs) = (x ∷ xs) ∷ tails xs
 
 infixl 5 _∷ʳ'_
 
