@@ -29,11 +29,26 @@ apply false y x = y
 Coerce′ : ∀ {α β} -> α ≡ β -> Set α -> Set β
 Coerce′ refl = id
 
+uncoerce′ : ∀ {α β} {A : Set α} -> (q : α ≡ β) -> Coerce′ q A -> A
+uncoerce′ refl = id
+
+split : ∀ {α β γ δ} {A : Set α} {B : A -> Set β} {C : Set γ}
+       -> (q : α ⊔ β ≡ δ) -> Coerce′ q (Σ A B) -> (∀ x -> B x -> C) -> C
+split q p g = uncurry g (uncoerce′ q p)
+
+splitWith₂ : ∀ {α β γ δ} {A : Set α} {B : A -> Set β}
+           -> (q : α ⊔ β ≡ δ)
+           -> (C : ∀ {δ} {r : α ⊔ β ≡ δ} -> Coerce′ r (Σ A B) -> Coerce′ r (Σ A B) -> Set γ)
+           -> (p₁ p₂ : Coerce′ q (Σ A B))
+           -> (∀ x₁ x₂ y₁ y₂ -> C {r = refl} (x₁ , y₁) (x₂ , y₂))
+           -> C {r = q} p₁ p₂
+splitWith₂ refl C (x₁ , y₁) (x₂ , y₂) g = g x₁ x₂ y₁ y₂
+
 data Coerce {β} : ∀ {α} -> α ≡ β -> Set α -> Set β where
   coerce : ∀ {A} -> A -> Coerce refl A
 
-coerce′ : ∀ {α β} {A : Set α} {q : α ≡ β} -> A -> Coerce q A
-coerce′ {q = refl} = coerce
+gcoerce : ∀ {α β} {A : Set α} {q : α ≡ β} -> A -> Coerce q A
+gcoerce {q = refl} = coerce
 
 mutual
   Binder : ∀ {ι} α β γ -> ι ⊔ lsuc (α ⊔ β) ≡ γ -> Set ι -> Set γ
@@ -49,29 +64,29 @@ pattern pi  A D = π _ true  (coerce (A , D))
 pattern ipi A D = π _ false (coerce (A , D))
 
 _⇒_ : ∀ {ι α β} {I : Set ι} {{q : α ≤ℓ β}} -> Set α -> Desc I β -> Desc I β
-_⇒_ {{q}} A D = π q true (coerce′ (A , λ _ -> D))
+_⇒_ {{q}} A D = π q true (gcoerce (A , λ _ -> D))
 
 mutual
   ⟦_⟧ : ∀ {ι β} {I : Set ι} -> Desc I β -> (I -> Set β) -> Set β
   ⟦ var i   ⟧ B = B i
-  ⟦ π q b C ⟧ B = ⟦ C ⟧ᶜ q b B
+  ⟦ π q b C ⟧ B = ⟦ C ⟧ᵇ q b B
   ⟦ D ⊕ E   ⟧ B = ⟦ D ⟧ B ⊎ ⟦ E ⟧ B
   ⟦ D ⊛ E   ⟧ B = ⟦ D ⟧ B × ⟦ E ⟧ B
 
-  ⟦_⟧ᶜ : ∀ {α ι β γ q} {I : Set ι}
+  ⟦_⟧ᵇ : ∀ {α ι β γ q} {I : Set ι}
        -> Binder α β γ q I -> α ≤ℓ β -> Bool -> (I -> Set β) -> Set β
-  ⟦ coerce (A , D) ⟧ᶜ q b B = Coerce′ q $ Pi b A λ x -> ⟦ D x ⟧ B
+  ⟦ coerce (A , D) ⟧ᵇ q b B = Coerce′ q $ Pi b A λ x -> ⟦ D x ⟧ B
 
 mutual
   Extend : ∀ {ι β} {I : Set ι} -> Desc I β -> (I -> Set β) -> I -> Set β
   Extend (var i)   B j = Lift (i ≡ j)
-  Extend (π q b C) B j = Extendᶜ C q b B j
+  Extend (π q b C) B j = Extendᵇ C q b B j
   Extend (D ⊕ E)   B j = Extend D B j ⊎ Extend E B j
   Extend (D ⊛ E)   B j = ⟦ D ⟧ B × Extend E B j
 
-  Extendᶜ : ∀ {α ι β γ q} {I : Set ι}
+  Extendᵇ : ∀ {α ι β γ q} {I : Set ι}
           -> Binder α β γ q I -> α ≤ℓ β -> Bool -> (I -> Set β) -> I -> Set β
-  Extendᶜ (coerce (A , D)) q b B j = Coerce′ q $ ∃ λ x -> Extend (D x) B j
+  Extendᵇ (coerce (A , D)) q b B j = Coerce′ q $ ∃ λ x -> Extend (D x) B j
 
 module _ {ι β} {I : Set ι} (D : Desc I β) where
   mutual
