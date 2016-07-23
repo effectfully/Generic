@@ -1,3 +1,5 @@
+-- Under reconstruction.
+
 module Generic.Function.Lookup where
 
 open import Generic.Core

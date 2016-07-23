@@ -1,10 +1,11 @@
 module Generic.Data.W where
 
-open import Generic.Core
+open import Generic.Main
+
+import Data.W as W
 
 W : ∀ {α β} -> (A : Set α) -> (A -> Set β) -> Set (α ⊔ β)
-W A B = μ′
-      $ pi A λ x -> (B x ⇒ pos) ⊛ pos
+W = readData W.W
 
 pattern sup x g = !#₀ (x , g , lrefl)
 

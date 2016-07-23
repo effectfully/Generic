@@ -5,7 +5,7 @@ open import Function public
 open import Data.Bool.Base hiding (_≟_) public
 open import Data.Nat.Base hiding (_≟_; _⊔_) public
 open import Data.Sum renaming (map to smap) public
-open import Data.Product renaming (map to pmap; zip to pzip) public
+open import Data.Product renaming (map to pmap; zip to pzip) hiding (_,′_) public
 
 open import Generic.Lib.Propositional public
 open import Generic.Lib.Heteroindexed public

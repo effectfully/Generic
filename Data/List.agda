@@ -1,13 +1,13 @@
 module Generic.Data.List where
 
-open import Generic.Core
+open import Generic.Main
+
+import Data.List.Base as List
 
 infixr 5 _∷_ _∷′_
 
 List : ∀ {α} -> Set α -> Set α
-List A = μ′
-       $ pos
-       ⊕ (A ⇒ pos ⊛ pos)
+List = readData List.List
 
 pattern []       = #₀ lrefl
 pattern _∷_ x xs = !#₁ (x , xs , lrefl)

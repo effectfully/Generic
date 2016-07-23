@@ -1,9 +1,15 @@
+-- Everything is positive, but Agda doesn't see this.
+{-# OPTIONS --no-positivity-check #-}
+
 module Generic.Core where
 
 open import Generic.Prelude public
-open import Generic.Coerce  public
 
+infix  4 _≤ℓ_
 infixr 5 _⇒_ _⊕_ _⊛_
+
+_≤ℓ_ : Level -> Level -> Set
+α ≤ℓ β = α ⊔ β ≡ β
 
 Pi : ∀ {α β} -> Bool -> (A : Set α) -> (A -> Set β) -> Set (α ⊔ β)
 Pi true  A B = (x : A) -> B x
@@ -17,35 +23,69 @@ apply : ∀ {α β} {A : Set α} {B : A -> Set β} b -> Pi b A B -> ∀ x -> B x
 apply true  f x = f x
 apply false y x = y
 
-data Shape : Set where
-  zeroˢ : Shape
-  sucˢ  : Shape -> Shape
-  forkˢ : Shape -> Shape -> Shape 
+Coerce′ : ∀ {α β} -> α ≡ β -> Set α -> Set β
+Coerce′ refl = id
 
-data Desc {ι} (I : Set ι) β : Shape -> Set (ι ⊔ lsuc β) where
-  var     : I -> Desc I β zeroˢ
-  π       : ∀ {α s} {{q : α ⊔ β ≡ β}}
-          -> Bool
-          -> Coerce (cong (λ αβ -> ι ⊔ lsuc αβ) q) (∃ λ (A : Set α) -> A -> Desc I β s)
-          -> Desc I β (sucˢ s)
-  _⊕_ _⊛_ : ∀ {s t} -> Desc I β s -> Desc I β t -> Desc I β (forkˢ s t)
+uncoerce′ : ∀ {α β} {A : Set α} -> (q : α ≡ β) -> Coerce′ q A -> A
+uncoerce′ refl = id
 
-pattern pi  A D = π true  (tag (A , D))
-pattern ipi A D = π false (tag (A , D))
+split : ∀ {α β γ δ} {A : Set α} {B : A -> Set β} {C : Set γ}
+       -> (q : α ⊔ β ≡ δ) -> Coerce′ q (Σ A B) -> (∀ x -> B x -> C) -> C
+split q p g = uncurry g (uncoerce′ q p)
 
-⟦_⟧ : ∀ {ι β s} {I : Set ι} -> Desc I β s -> (I -> Set β) -> Set β
-⟦ var i ⟧ B = B i
-⟦ π b P ⟧ B = Transform P λ A D -> Pi b A λ x -> ⟦ D x ⟧ B
-⟦ D ⊕ E ⟧ B = ⟦ D ⟧ B ⊎ ⟦ E ⟧ B
-⟦ D ⊛ E ⟧ B = ⟦ D ⟧ B × ⟦ E ⟧ B
+splitWith₂ : ∀ {α β γ δ} {A : Set α} {B : A -> Set β}
+           -> (q : α ⊔ β ≡ δ)
+           -> (C : ∀ {δ} {r : α ⊔ β ≡ δ} -> Coerce′ r (Σ A B) -> Coerce′ r (Σ A B) -> Set γ)
+           -> (p₁ p₂ : Coerce′ q (Σ A B))
+           -> (∀ x₁ x₂ y₁ y₂ -> C {r = refl} (x₁ , y₁) (x₂ , y₂))
+           -> C {r = q} p₁ p₂
+splitWith₂ refl C (x₁ , y₁) (x₂ , y₂) g = g x₁ x₂ y₁ y₂
 
-Extend : ∀ {ι β s} {I : Set ι} -> Desc I β s -> (I -> Set β) -> I -> Set β
-Extend (var i) B j = Lift (i ≡ j)
-Extend (π b P) B j = Transform P λ A D -> ∃ λ x -> Extend (D x) B j
-Extend (D ⊕ E) B j = Extend D B j ⊎ Extend E B j
-Extend (D ⊛ E) B j = ⟦ D ⟧ B × Extend E B j
+data Coerce {β} : ∀ {α} -> α ≡ β -> Set α -> Set β where
+  coerce : ∀ {A} -> A -> Coerce refl A
 
-module _ {ι β s} {I : Set ι} (D : Desc I β s) where
+gcoerce : ∀ {α β} {A : Set α} {q : α ≡ β} -> A -> Coerce q A
+gcoerce {q = refl} = coerce
+
+mutual
+  Binder : ∀ {ι} α β γ -> ι ⊔ lsuc (α ⊔ β) ≡ γ -> Set ι -> Set γ
+  Binder α β γ q I = Coerce q (∃ λ (A : Set α) -> A -> Desc I β)
+
+  data Desc {ι} (I : Set ι) β : Set (ι ⊔ lsuc β) where
+    var     : I -> Desc I β
+    π       : ∀ {α}
+            -> (q : α ≤ℓ β) -> Bool -> Binder α β _ (cong (λ αβ -> ι ⊔ lsuc αβ) q) I -> Desc I β
+    _⊕_ _⊛_ : Desc I β -> Desc I β -> Desc I β
+
+pattern pi  A D = π _ true  (coerce (A , D))
+pattern ipi A D = π _ false (coerce (A , D))
+
+_⇒_ : ∀ {ι α β} {I : Set ι} {{q : α ≤ℓ β}} -> Set α -> Desc I β -> Desc I β
+_⇒_ {{q}} A D = π q true (gcoerce (A , λ _ -> D))
+
+mutual
+  ⟦_⟧ : ∀ {ι β} {I : Set ι} -> Desc I β -> (I -> Set β) -> Set β
+  ⟦ var i   ⟧ B = B i
+  ⟦ π q b C ⟧ B = ⟦ C ⟧ᵇ q b B
+  ⟦ D ⊕ E   ⟧ B = ⟦ D ⟧ B ⊎ ⟦ E ⟧ B
+  ⟦ D ⊛ E   ⟧ B = ⟦ D ⟧ B × ⟦ E ⟧ B
+
+  ⟦_⟧ᵇ : ∀ {α ι β γ q} {I : Set ι}
+       -> Binder α β γ q I -> α ≤ℓ β -> Bool -> (I -> Set β) -> Set β
+  ⟦ coerce (A , D) ⟧ᵇ q b B = Coerce′ q $ Pi b A λ x -> ⟦ D x ⟧ B
+
+mutual
+  Extend : ∀ {ι β} {I : Set ι} -> Desc I β -> (I -> Set β) -> I -> Set β
+  Extend (var i)   B j = Lift (i ≡ j)
+  Extend (π q b C) B j = Extendᵇ C q b B j
+  Extend (D ⊕ E)   B j = Extend D B j ⊎ Extend E B j
+  Extend (D ⊛ E)   B j = ⟦ D ⟧ B × Extend E B j
+
+  Extendᵇ : ∀ {α ι β γ q} {I : Set ι}
+          -> Binder α β γ q I -> α ≤ℓ β -> Bool -> (I -> Set β) -> I -> Set β
+  Extendᵇ (coerce (A , D)) q b B j = Coerce′ q $ ∃ λ x -> Extend (D x) B j
+
+module _ {ι β} {I : Set ι} (D : Desc I β) where
   mutual
     data μ j : Set β where
       node : Node j -> μ j
@@ -53,18 +93,14 @@ module _ {ι β s} {I : Set ι} (D : Desc I β s) where
     Node : I -> Set β
     Node = Extend D μ
 
-node-inj : ∀ {i β s} {I : Set i} {D : Desc I β s} {j} {e₁ e₂ : Node D j}
+node-inj : ∀ {i β} {I : Set i} {D : Desc I β} {j} {e₁ e₂ : Node D j}
          -> node {D = D} e₁ ≡ node e₂ -> e₁ ≡ e₂
 node-inj refl = refl
 
-_⇒_ : ∀ {ι α β s} {I : Set ι} {{q : α ⊔ β ≡ β}}
-    -> (A : Set α) -> Desc I β s -> Desc I β (sucˢ s)
-A ⇒ D = π true (coerce (A , λ _ -> D))
-
-μ′ : ∀ {β s} -> Desc ⊤₀ β s -> Set β
+μ′ : ∀ {β} -> Desc ⊤₀ β -> Set β
 μ′ D = μ D tt
 
-pos : ∀ {β} -> Desc ⊤₀ β zeroˢ
+pos : ∀ {β} -> Desc ⊤₀ β
 pos = var tt
 
 pattern #₀ p = node (inj₁ p)
