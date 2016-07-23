@@ -41,6 +41,10 @@ Any B  []      = ⊥
 Any B (x ∷ []) = B x
 Any B (x ∷ xs) = B x ⊎ Any B xs
 
+All : ∀ {α β} {A : Set α} -> (A -> Set β) -> List A -> Set β
+All B  []      = ⊤
+All B (x ∷ xs) = B x × All B xs
+
 ,-inj : ∀ {α β} {A : Set α} {B : A -> Set β} {x₁ x₂} {y₁ : B x₁} {y₂ : B x₂}
       -> (x₁ , y₁) ≡ (x₂ , y₂) -> [ B ] y₁ ≅ y₂
 ,-inj refl = irefl
