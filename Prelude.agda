@@ -6,6 +6,7 @@ open import Data.Bool.Base hiding (_≟_) public
 open import Data.Nat.Base hiding (_≟_; _⊔_) public
 open import Data.Sum renaming (map to smap) public
 open import Data.Product renaming (map to pmap; zip to pzip) hiding (_,′_) public
+open import Data.List.Base public
 
 open import Generic.Lib.Propositional public
 open import Generic.Lib.Heteroindexed public
@@ -34,6 +35,11 @@ record Eq {α} (A : Set α) : Set α where
   _==_ : A -> A -> Bool
   x == y = ⌊ x ≟ y ⌋ 
 open Eq {{...}} public
+
+Any : ∀ {α β} {A : Set α} -> (A -> Set β) -> List A -> Set β
+Any B  []      = ⊥
+Any B (x ∷ []) = B x
+Any B (x ∷ xs) = B x ⊎ Any B xs
 
 ,-inj : ∀ {α β} {A : Set α} {B : A -> Set β} {x₁ x₂} {y₁ : B x₁} {y₂ : B x₂}
       -> (x₁ , y₁) ≡ (x₂ , y₂) -> [ B ] y₁ ≅ y₂

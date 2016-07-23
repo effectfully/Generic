@@ -1,4 +1,4 @@
--- Everything is positive, but Agda doesn't see this.
+-- Everything is strictly positive, but Agda doesn't see this.
 {-# OPTIONS --no-positivity-check #-}
 
 module Generic.Core where
@@ -6,7 +6,7 @@ module Generic.Core where
 open import Generic.Prelude public
 
 infix  4 _≤ℓ_
-infixr 5 _⇒_ _⊕_ _⊛_
+infixr 5 _⇒_ _⊛_
 
 _≤ℓ_ : Level -> Level -> Set
 α ≤ℓ β = α ⊔ β ≡ β
@@ -49,25 +49,24 @@ gcoerce {q = refl} = coerce
 
 mutual
   Binder : ∀ {ι} α β γ -> ι ⊔ lsuc (α ⊔ β) ≡ γ -> Set ι -> Set γ
-  Binder α β γ q I = Coerce q (∃ λ (A : Set α) -> A -> Desc I β)
+  Binder α β γ q I = Coerce q (∃ λ (A : Set α) -> A -> Cons I β)
 
-  data Desc {ι} (I : Set ι) β : Set (ι ⊔ lsuc β) where
-    var     : I -> Desc I β
-    π       : ∀ {α}
-            -> (q : α ≤ℓ β) -> Bool -> Binder α β _ (cong (λ αβ -> ι ⊔ lsuc αβ) q) I -> Desc I β
-    _⊕_ _⊛_ : Desc I β -> Desc I β -> Desc I β
+  data Cons {ι} (I : Set ι) β : Set (ι ⊔ lsuc β) where
+    var : I -> Cons I β
+    π   : ∀ {α}
+        -> (q : α ≤ℓ β) -> Bool -> Binder α β _ (cong (λ αβ -> ι ⊔ lsuc αβ) q) I -> Cons I β
+    _⊛_ : Cons I β -> Cons I β -> Cons I β
 
 pattern pi  A D = π _ true  (coerce (A , D))
 pattern ipi A D = π _ false (coerce (A , D))
 
-_⇒_ : ∀ {ι α β} {I : Set ι} {{q : α ≤ℓ β}} -> Set α -> Desc I β -> Desc I β
+_⇒_ : ∀ {ι α β} {I : Set ι} {{q : α ≤ℓ β}} -> Set α -> Cons I β -> Cons I β
 _⇒_ {{q}} A D = π q true (gcoerce (A , λ _ -> D))
 
 mutual
-  ⟦_⟧ : ∀ {ι β} {I : Set ι} -> Desc I β -> (I -> Set β) -> Set β
+  ⟦_⟧ : ∀ {ι β} {I : Set ι} -> Cons I β -> (I -> Set β) -> Set β
   ⟦ var i   ⟧ B = B i
   ⟦ π q b C ⟧ B = ⟦ C ⟧ᵇ q b B
-  ⟦ D ⊕ E   ⟧ B = ⟦ D ⟧ B ⊎ ⟦ E ⟧ B
   ⟦ D ⊛ E   ⟧ B = ⟦ D ⟧ B × ⟦ E ⟧ B
 
   ⟦_⟧ᵇ : ∀ {α ι β γ q} {I : Set ι}
@@ -75,15 +74,17 @@ mutual
   ⟦ coerce (A , D) ⟧ᵇ q b B = Coerce′ q $ Pi b A λ x -> ⟦ D x ⟧ B
 
 mutual
-  Extend : ∀ {ι β} {I : Set ι} -> Desc I β -> (I -> Set β) -> I -> Set β
+  Extend : ∀ {ι β} {I : Set ι} -> Cons I β -> (I -> Set β) -> I -> Set β
   Extend (var i)   B j = Lift (i ≡ j)
   Extend (π q b C) B j = Extendᵇ C q b B j
-  Extend (D ⊕ E)   B j = Extend D B j ⊎ Extend E B j
   Extend (D ⊛ E)   B j = ⟦ D ⟧ B × Extend E B j
 
   Extendᵇ : ∀ {α ι β γ q} {I : Set ι}
           -> Binder α β γ q I -> α ≤ℓ β -> Bool -> (I -> Set β) -> I -> Set β
   Extendᵇ (coerce (A , D)) q b B j = Coerce′ q $ ∃ λ x -> Extend (D x) B j
+
+Desc : ∀ {ι} -> Set ι -> ∀ β -> Set (ι ⊔ lsuc β)
+Desc I β = List (Cons I β)
 
 module _ {ι β} {I : Set ι} (D : Desc I β) where
   mutual
@@ -91,7 +92,7 @@ module _ {ι β} {I : Set ι} (D : Desc I β) where
       node : Node j -> μ j
 
     Node : I -> Set β
-    Node = Extend D μ
+    Node j = Any (λ C -> Extend C μ j) D
 
 node-inj : ∀ {i β} {I : Set i} {D : Desc I β} {j} {e₁ e₂ : Node D j}
          -> node {D = D} e₁ ≡ node e₂ -> e₁ ≡ e₂
@@ -100,7 +101,7 @@ node-inj refl = refl
 μ′ : ∀ {β} -> Desc ⊤₀ β -> Set β
 μ′ D = μ D tt
 
-pos : ∀ {β} -> Desc ⊤₀ β
+pos : ∀ {β} -> Cons ⊤₀ β
 pos = var tt
 
 pattern #₀ p = node (inj₁ p)

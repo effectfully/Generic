@@ -77,7 +77,7 @@ pattern varg x = arg (arg-info visible relevant) x
 {-# DISPLAY arg (arg-info visible relevant) = varg #-}
 
 pattern harg x = arg (arg-info hidden  relevant) x
-{-# DISPLAY arg (arg-info hidden  relevant) = varg #-}
+{-# DISPLAY arg (arg-info hidden  relevant) = harg #-}
 
 visibles : List Term -> List (Arg Term)
 visibles = map (arg (arg-info visible relevant))
@@ -110,8 +110,10 @@ craftLams (pi  _        (abs s b)) t = craftLams b t
 craftLams  _                       t = t
 
 quoteBool : Bool -> Term
-quoteBool true  = quoteTerm true
-quoteBool false = quoteTerm false
+quoteBool b = if b then quoteTerm true else quoteTerm false
+
+quoteList : List Term -> Term
+quoteList = foldr (λ x r -> vis con (quote _∷_) $ x ∷ r ∷ []) (quoteTerm (List Term ∋ []))
 
 qπ : Arg-info -> String -> Term -> Term -> Term 
 qπ i s a b = vis con (quote π)
@@ -137,13 +139,20 @@ quoteData : Name -> TC Term
 quoteData d = getData d >>= uncurry λ n as ->
   case mapM (quoteCons d ∘′ trustFromJust ∘′ dropPi n) as of λ
     {  nothing  -> typeError (strErr "failed" ∷ [])
-    ; (just ts) -> case initLast ts of λ
-        {  []         -> typeError (strErr "I'll fix this" ∷ [])
-        ; (ts' ∷ʳ' t) -> (λ b -> craftLams (trustFromJust (takePi n b)) $
-              vis def (quote μ′) $ foldr (λ t s -> vis con (quote _⊕_) (t ∷ s ∷ [])) t ts' ∷ [])
-            <$> getType d
-        }
+    ; (just ts) -> (λ b -> craftLams (trustFromJust (takePi n b)) $
+                        vis def (quote μ′) (quoteList ts ∷ []))
+                      <$> getType d
     }
+
+-- unquote (unify (from-just (quoteCons (quote ℕ) (quoteTerm ℕ))))
+
+-- case initLast ts of λ
+--         {  []         -> typeError (strErr "I'll fix this" ∷ [])
+--         ; (ts' ∷ʳ' t) -> (λ b -> craftLams (trustFromJust (takePi n b)) $
+--               vis def (quote μ′) $ foldr (λ t s -> vis con (quote _⊕_) (t ∷ s ∷ [])) t ts' ∷ [])
+--             <$> getType d
+--         }
+--     }
 
 macro
   readData : Name -> Term -> TC ⊤

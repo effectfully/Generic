@@ -1,34 +1,37 @@
 module Generic.Data.List where
 
-open import Generic.Main
+module _ where
+  open import Generic.Main as Main hiding (List; []; _∷_)
 
-import Data.List.Base as List
+  infixr 5 _∷_ _∷′_
 
-infixr 5 _∷_ _∷′_
+  List : ∀ {α} -> Set α -> Set α
+  List = readData Main.List
 
-List : ∀ {α} -> Set α -> Set α
-List = readData List.List
+  pattern []       = #₀ lrefl
+  pattern _∷_ x xs = !#₁ (x , xs , lrefl)
 
-pattern []       = #₀ lrefl
-pattern _∷_ x xs = !#₁ (x , xs , lrefl)
+  _∷′_ : ∀ {α} {A : Set α} -> A -> List A -> List A
+  _∷′_ = _∷_
 
-_∷′_ : ∀ {α} {A : Set α} -> A -> List A -> List A
-_∷′_ = _∷_
+  elimList : ∀ {α π} {A : Set α}
+           -> (P : List A -> Set π)
+           -> (∀ {xs} x -> P xs -> P (x ∷ xs))
+           -> P []
+           -> ∀ xs
+           -> P xs
+  elimList P f z  []      = z
+  elimList P f z (x ∷ xs) = f x (elimList P f z xs)
 
-elimList : ∀ {α π} {A : Set α}
-         -> (P : List A -> Set π)
-         -> (∀ {xs} x -> P xs -> P (x ∷ xs))
-         -> P []
-         -> ∀ xs
-         -> P xs
-elimList P f z  []      = z
-elimList P f z (x ∷ xs) = f x (elimList P f z xs)
+-- The entire content of `Data.List.Base` (modulo `Generic.Data.Maybe` instead of
+-- `Data.Maybe.Base` and _∷_ was renamed to _∷′_ in some places)
 
-
-
--- The entire content of `Data.List.Base` (modulo imports and the constructors were renamed):
-
+open import Data.Nat.Base using (ℕ; zero; suc; _+_; _*_)
+open import Data.Sum as Sum using (_⊎_; inj₁; inj₂)
+open import Data.Bool.Base using (Bool; false; true; not; _∧_; _∨_; if_then_else_)
 open import Generic.Data.Maybe
+open import Data.Product as Prod using (_×_; _,_)
+open import Function
 
 infixr 5 _++_
 
@@ -198,7 +201,7 @@ dropWhile p (x ∷ xs) with p x
 span : ∀ {a} {A : Set a} → (A → Bool) → List A → (List A × List A)
 span p []       = ([] , [])
 span p (x ∷ xs) with p x
-... | true  = pmap (_∷′_ x) id (span p xs)
+... | true  = Prod.map (_∷′_ x) id (span p xs)
 ... | false = ([] , x ∷ xs)
 
 break : ∀ {a} {A : Set a} → (A → Bool) → List A → (List A × List A)
