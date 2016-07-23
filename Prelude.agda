@@ -3,14 +3,28 @@ module Generic.Prelude where
 open import Level renaming (zero to lzero; suc to lsuc) public
 open import Function public
 open import Data.Bool.Base hiding (_≟_) public
-open import Data.Nat.Base hiding (_≟_; _⊔_) public
+open import Data.Nat.Base as Nat hiding (_≟_; _⊔_) public
+open import Data.String.Base renaming (_++_ to _++ˢ_) public
 open import Data.Sum renaming (map to smap) public
 open import Data.Product renaming (map to pmap; zip to pzip) hiding (_,′_) public
 open import Data.List.Base public
+open import Category.Monad public
+open import Reflection
+  renaming (visible to expl; hidden to impl; instance′ to inst;
+    relevant to rel; irrelevant to irr; pi to rpi; lam to rlam)
+  hiding (_≟_) public
 
 open import Generic.Lib.Propositional public
 open import Generic.Lib.Heteroindexed public
 open import Generic.Lib.Decidable hiding (map) public
+
+open RawMonad {{...}} renaming (_⊛_ to _<*>_) hiding (zipWith) public
+
+open import Data.Maybe.Base hiding (Any; All; map)
+import Data.Maybe as Maybe
+import Data.List as List
+
+infixl 3 _·_
 
 data ⊥ {α} : Set α where
 record ⊤ {α} : Set α where
@@ -35,6 +49,10 @@ record Eq {α} (A : Set α) : Set α where
   _==_ : A -> A -> Bool
   x == y = ⌊ x ≟ y ⌋ 
 open Eq {{...}} public
+
+record Quote {α} (A : Set α) : Set α where
+  field deepQuote : A -> Term
+open Quote {{...}} public
 
 Any : ∀ {α β} {A : Set α} -> (A -> Set β) -> List A -> Set β
 Any B  []      = ⊥
@@ -75,17 +93,85 @@ decSum f g (inj₂ y₁) (inj₂ y₂) = dcong inj₂ inj₂-inj (g y₁ y₂)
 decSum f g (inj₁ x₁) (inj₂ y₂) = no λ()
 decSum f g (inj₂ y₁) (inj₁ x₂) = no λ()
 
+fmap = _<$>_
+
+mapM : ∀ {α β} {A : Set α} {B : Set β} {M : Set β -> Set β} {{mMonad : RawMonad M}}
+     -> (A -> M B) -> List A -> M (List B)
+mapM {{mMonad}} = List.mapM mMonad
+
+module _ where
+  import Relation.Binary.PropositionalEquality as B
+
+  liftBase : ∀ {α} {A : Set α} {x y : A} -> x B.≡ y -> x ≡ y
+  liftBase B.refl = refl
+
+  lowerBase : ∀ {α} {A : Set α} {x y : A} -> x ≡ y -> x B.≡ y
+  lowerBase refl = B.refl
+
+  viaBase : ∀ {α} {A : Set α} -> Decidable (B._≡_ {A = A}) -> Eq A
+  viaBase d = record
+    { _≟_ = flip (via-injection {A = ≡-Setoid _} {B = B.setoid _}) d $ record
+      { to = record
+        { _⟨$⟩_ = id
+        ; cong  = lowerBase
+        }
+      ; injective = liftBase
+      }
+    }
+
+pattern earg x = arg (arg-info expl rel) x
+{-# DISPLAY arg (arg-info expl relevant) = earg #-}
+
+pattern iarg x = arg (arg-info impl rel) x
+{-# DISPLAY arg (arg-info impl relevant) = iarg #-}
+
+vis : {A : Set} -> (A -> List (Arg Term) -> Term) -> A -> List Term -> Term
+vis k x = k x ∘ map earg
+
+elam : String -> Term -> Term
+elam s = rlam expl ∘ abs s
+
+_·_ : Term -> Term -> Term
+f · x = vis def (quote id) $ f ∷ x ∷ []
+
+-- Using `⊤₀` here results in unsolved metas later.
+unshift : Term -> Term
+unshift t = elam "_" t · quoteTerm (Unit.⊤ ∋ _)
+  where import Data.Unit.Base as Unit
+
 instance
   ,-inst : ∀ {α β} {A : Set α} {B : A -> Set β} {{x : A}} {{y : B x}} -> Σ A B
   ,-inst {{x}} {{y}} = x , y
 
   ℕEq : Eq ℕ
-  ℕEq = record { _≟_ = go } where
-    suc-inj : ∀ {n m} -> suc n ≡ suc m -> n ≡ m
-    suc-inj refl = refl
+  ℕEq = viaBase Nat._≟_
 
-    go : IsSet ℕ
-    go  0       0      = yes refl
-    go (suc n) (suc m) = dcong suc suc-inj (go n m)
-    go  0      (suc _) = no λ()
-    go (suc n)  0      = no λ()
+  NameEq : Eq Name
+  NameEq = viaBase _≟-Name_
+
+  TermQuote : Quote Term
+  TermQuote = record { deepQuote = id }
+
+  VisibilityQuote : Quote Visibility
+  VisibilityQuote = record
+    { deepQuote = λ
+      { expl -> quoteTerm expl
+      ; impl -> quoteTerm impl
+      ; inst -> quoteTerm inst
+      }
+    }
+
+  VisibilityList : ∀ {α} {A : Set α} {{aQuote : Quote A}} -> Quote (List A)
+  VisibilityList = record
+    { deepQuote = foldr (λ x r -> vis con (quote _∷_) $ deepQuote x ∷ r ∷ [])
+                        (quoteTerm (List Term ∋ []))
+    }  
+
+  MaybeMonad : ∀ {α} -> RawMonad {α} Maybe
+  MaybeMonad = Maybe.monad
+
+  TCMonad : ∀ {α} -> RawMonad {α} TC
+  TCMonad = record
+    { return = returnTC
+    ; _>>=_  = bindTC
+    }

@@ -11,17 +11,20 @@ infixr 5 _⇒_ _⊛_
 _≤ℓ_ : Level -> Level -> Set
 α ≤ℓ β = α ⊔ β ≡ β
 
-Pi : ∀ {α β} -> Bool -> (A : Set α) -> (A -> Set β) -> Set (α ⊔ β)
-Pi true  A B = (x : A) -> B x
-Pi false A B = {x : A} -> B x
+Pi : ∀ {α β} -> Visibility -> (A : Set α) -> (A -> Set β) -> Set (α ⊔ β)
+Pi expl A B =  (x : A)  -> B x
+Pi impl A B =  {x : A}  -> B x
+Pi inst A B = {{x : A}} -> B x
 
-lam : ∀ {α β} {A : Set α} {B : A -> Set β} b -> (∀ x -> B x) -> Pi b A B
-lam true  f = f
-lam false f = f _
+lam : ∀ {α β} {A : Set α} {B : A -> Set β} v -> (∀ x -> B x) -> Pi v A B
+lam expl f = f
+lam impl f = f _
+lam inst f = f _
 
-apply : ∀ {α β} {A : Set α} {B : A -> Set β} b -> Pi b A B -> ∀ x -> B x
-apply true  f x = f x
-apply false y x = y
+app : ∀ {α β} {A : Set α} {B : A -> Set β} v -> Pi v A B -> ∀ x -> B x
+app expl f x = f x
+app impl y x = y
+app inst y x = y
 
 Coerce′ : ∀ {α β} -> α ≡ β -> Set α -> Set β
 Coerce′ refl = id
@@ -54,34 +57,35 @@ mutual
   data Cons {ι} (I : Set ι) β : Set (ι ⊔ lsuc β) where
     var : I -> Cons I β
     π   : ∀ {α}
-        -> (q : α ≤ℓ β) -> Bool -> Binder α β _ (cong (λ αβ -> ι ⊔ lsuc αβ) q) I -> Cons I β
+        -> (q : α ≤ℓ β) -> Visibility -> Binder α β _ (cong (λ αβ -> ι ⊔ lsuc αβ) q) I -> Cons I β
     _⊛_ : Cons I β -> Cons I β -> Cons I β
 
-pattern pi  A D = π _ true  (coerce (A , D))
-pattern ipi A D = π _ false (coerce (A , D))
+pattern pi   A D = π _ expl (coerce (A , D))
+pattern ipi  A D = π _ impl (coerce (A , D))
+pattern iipi A D = π _ inst (coerce (A , D))
 
 _⇒_ : ∀ {ι α β} {I : Set ι} {{q : α ≤ℓ β}} -> Set α -> Cons I β -> Cons I β
-_⇒_ {{q}} A D = π q true (gcoerce (A , λ _ -> D))
+_⇒_ {{q}} A D = π q expl (gcoerce (A , λ _ -> D))
 
 mutual
   ⟦_⟧ : ∀ {ι β} {I : Set ι} -> Cons I β -> (I -> Set β) -> Set β
   ⟦ var i   ⟧ B = B i
-  ⟦ π q b C ⟧ B = ⟦ C ⟧ᵇ q b B
+  ⟦ π q v C ⟧ B = ⟦ C ⟧ᵇ q v B
   ⟦ D ⊛ E   ⟧ B = ⟦ D ⟧ B × ⟦ E ⟧ B
 
   ⟦_⟧ᵇ : ∀ {α ι β γ q} {I : Set ι}
-       -> Binder α β γ q I -> α ≤ℓ β -> Bool -> (I -> Set β) -> Set β
-  ⟦ coerce (A , D) ⟧ᵇ q b B = Coerce′ q $ Pi b A λ x -> ⟦ D x ⟧ B
+       -> Binder α β γ q I -> α ≤ℓ β -> Visibility -> (I -> Set β) -> Set β
+  ⟦ coerce (A , D) ⟧ᵇ q v B = Coerce′ q $ Pi v A λ x -> ⟦ D x ⟧ B
 
 mutual
   Extend : ∀ {ι β} {I : Set ι} -> Cons I β -> (I -> Set β) -> I -> Set β
   Extend (var i)   B j = Lift (i ≡ j)
-  Extend (π q b C) B j = Extendᵇ C q b B j
+  Extend (π q v C) B j = Extendᵇ C q B j
   Extend (D ⊛ E)   B j = ⟦ D ⟧ B × Extend E B j
 
   Extendᵇ : ∀ {α ι β γ q} {I : Set ι}
-          -> Binder α β γ q I -> α ≤ℓ β -> Bool -> (I -> Set β) -> I -> Set β
-  Extendᵇ (coerce (A , D)) q b B j = Coerce′ q $ ∃ λ x -> Extend (D x) B j
+          -> Binder α β γ q I -> α ≤ℓ β -> (I -> Set β) -> I -> Set β
+  Extendᵇ (coerce (A , D)) q B j = Coerce′ q $ ∃ λ x -> Extend (D x) B j
 
 Desc : ∀ {ι} -> Set ι -> ∀ β -> Set (ι ⊔ lsuc β)
 Desc I β = List (Cons I β)
