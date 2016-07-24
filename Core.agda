@@ -64,6 +64,10 @@ pattern pi   A D = π _ expl (coerce (A , D))
 pattern ipi  A D = π _ impl (coerce (A , D))
 pattern iipi A D = π _ inst (coerce (A , D))
 
+{-# DISPLAY π q expl (coerce (A , D)) = pi   A D #-}
+{-# DISPLAY π q impl (coerce (A , D)) = ipi  A D #-}
+{-# DISPLAY π q inst (coerce (A , D)) = iipi A D #-}
+
 _⇒_ : ∀ {ι α β} {I : Set ι} {{q : α ≤ℓ β}} -> Set α -> Cons I β -> Cons I β
 _⇒_ {{q}} A D = π q expl (gcoerce (A , λ _ -> D))
 
