@@ -1,11 +1,12 @@
 module Generic.Lib.Decidable where
 
 open import Relation.Nullary public
-open import Relation.Nullary.Decidable public
+open import Relation.Nullary.Decidable hiding (map) public
 open import Relation.Binary using (Decidable) public
 
 open import Function
 open import Relation.Nullary
+open import Data.Bool.Base hiding (_≟_)
 open import Data.Product
 
 open import Generic.Lib.Propositional
@@ -18,6 +19,15 @@ _% = _∘_
 
 IsSet : ∀ {α} -> Set α -> Set α
 IsSet A = Decidable {A = A} _≡_
+
+record Eq {α} (A : Set α) : Set α where
+  infixl 5 _≟_ _==_
+
+  field _≟_ : IsSet A
+
+  _==_ : A -> A -> Bool
+  x == y = ⌊ x ≟ y ⌋ 
+open Eq {{...}} public
 
 _#_ : ∀ {α} {A : Set α} -> A -> A -> Set
 x # y = Dec (x ≡ y)
@@ -69,3 +79,23 @@ dhcong₂ : ∀ {α β γ} {A : Set α} {B : A -> Set β} {C : Set γ} {x₁ x�
         -> f x₁ y₁ # f x₂ y₂
 dhcong₂ f inj (yes refl) q = dcong (f _) (homo ∘ inj) (q _)
 dhcong₂ f inj (no c)     q = no (c ∘ inds ∘ inj)
+
+module _ where
+  import Relation.Binary.PropositionalEquality as B
+
+  liftBase : ∀ {α} {A : Set α} {x y : A} -> x B.≡ y -> x ≡ y
+  liftBase B.refl = refl
+
+  lowerBase : ∀ {α} {A : Set α} {x y : A} -> x ≡ y -> x B.≡ y
+  lowerBase refl = B.refl
+
+  viaBase : ∀ {α} {A : Set α} -> Decidable (B._≡_ {A = A}) -> Eq A
+  viaBase d = record
+    { _≟_ = flip (via-injection {A = ≡-Setoid _} {B = B.setoid _}) d $ record
+      { to = record
+        { _⟨$⟩_ = id
+        ; cong  = lowerBase
+        }
+      ; injective = liftBase
+      }
+    }

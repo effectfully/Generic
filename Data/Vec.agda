@@ -1,14 +1,13 @@
 module Generic.Data.Vec where
 
-open import Generic.Core
+open import Generic.Main
+
+import Data.Vec as Vec
 
 infixr 5 _∷ᵥ_
 
 Vec : ∀ {α} -> Set α -> ℕ -> Set α
-Vec A = μ
-      $ var 0
-      ∷ (ipi ℕ λ n -> A ⇒ var n ⊛ var (suc n))
-      ∷ []
+Vec = readData Vec.Vec
 
 -- []ᵥ : ∀ {α} {A : Set α} -> Vec A 0
 pattern []ᵥ = #₀ lrefl

@@ -1,12 +1,11 @@
 module Generic.Data.Fin where
 
-open import Generic.Core
+open import Generic.Main
+
+import Data.Fin as Fin
 
 Fin : ℕ -> Set
-Fin = μ
-    $ (ipi ℕ λ n -> var (suc n))
-    ∷ (ipi ℕ λ n -> var n ⊛ var (suc n))
-    ∷ []
+Fin = readData Fin.Fin
 
 pattern fzero {n}   = #₀  (n , lrefl)
 pattern fsuc  {n} i = !#₁ (n , i , lrefl)
