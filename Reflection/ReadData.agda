@@ -38,7 +38,7 @@ quoteData : Name -> TC Term
 quoteData d =
   getData d >>= uncurry λ p as ->
   getType d >>= λ ab ->
-    case _,_ <$> takePi p ab <*> (_,_ <$> dropPi p ab <*> mapM (dropPi p >=> quoteCons d p) as) of λ
+    case takePi p ab ⊗ (dropPi p ab ⊗ mapM (dropPi p >=> quoteCons d p) as) of λ
       {  nothing            -> typeError (strErr "failed" ∷ [])
       ; (just (a , b , cs)) -> return ∘′ craftLams a ∘′ curryBy b $ vis₁ def (quote μ) (deepQuote cs)
       }
