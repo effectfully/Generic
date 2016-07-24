@@ -16,7 +16,7 @@ curryBy = go 0 where
     shiftBy n t · pack (map (λ m -> rvar m []) $ downFrom n)
 
 qπ : Visibility -> String -> Term -> Term -> Term 
-qπ v s a b = vis₃ con (quote π) unknown (deepQuote v) $
+qπ v s a b = vis₃ con (quote π) unknown (reify v) $
                vis₁ con (quote coerce) (vis₂ con (quote _,_) a (elam s b))
 
 quoteHyp : Name -> ℕ -> Type -> Maybe (Maybe Term)
@@ -41,7 +41,7 @@ quoteData d =
     case takePi p ab ⊗ (dropPi p ab ⊗ mapM (dropPi p >=> quoteCons d p) (map proj₂ nas)) of λ
       {  nothing            -> typeError (strErr "failed" ∷ [])
       ; (just (a , b , cs)) -> return ∘′ craftLams a ∘′ curryBy b $
-           vis₁ def (quote μ) (deepQuote (zip (map proj₁ nas) cs))
+           vis₁ def (quote μ) (reify (zip (map proj₁ nas) cs))
       }
 
 macro

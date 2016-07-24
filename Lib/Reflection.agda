@@ -18,9 +18,13 @@ open import Data.List.Base
 
 infixl 3 _·_
 
-record Quote {α} (A : Set α) : Set α where
-  field deepQuote : A -> Term
-open Quote {{...}} public
+record Reify {α} (A : Set α) : Set α where
+  field reify : A -> Term
+
+  macro
+    reflect : A -> Term -> TC _
+    reflect = unify ∘ reify
+open Reify {{...}} public
 
 pattern earg x = arg (arg-info expl rel) x
 {-# DISPLAY arg (arg-info expl relevant) = earg #-}
@@ -56,40 +60,50 @@ instance
   NameEq : Eq Name
   NameEq = viaBase _≟-Name_
 
-  TermQuote : Quote Term
-  TermQuote = record
-    { deepQuote = id
+  TermReify : Reify Term
+  TermReify = record
+    { reify = id
     }
 
-  NameQuote : Quote Name
-  NameQuote = record { deepQuote = lit ∘′ name }
+  NameReify : Reify Name
+  NameReify = record
+    { reify = lit ∘′ name
+    }
 
-  VisibilityQuote : Quote Visibility
-  VisibilityQuote = record
-    { deepQuote = λ
+  VisibilityReify : Reify Visibility
+  VisibilityReify = record
+    { reify = λ
       { expl -> quoteTerm expl
       ; impl -> quoteTerm impl
       ; inst -> quoteTerm inst
       }
     }
 
-  ProdQuote : ∀ {α β} {A : Set α} {B : A -> Set β}
-                {{aQuote : Quote A}} {{bQuote : ∀ {x} -> Quote (B x)}} -> Quote (Σ A B)
-  ProdQuote = record
-    { deepQuote = uncurry λ x y -> vis₂ con (quote _,_) (deepQuote x) (deepQuote y)
+  ProdReify : ∀ {α β} {A : Set α} {B : A -> Set β}
+                {{aReify : Reify A}} {{bReify : ∀ {x} -> Reify (B x)}} -> Reify (Σ A B)
+  ProdReify = record
+    { reify = uncurry λ x y -> vis₂ con (quote _,_) (reify x) (reify y)
     }                
 
-  ListQuote : ∀ {α} {A : Set α} {{aQuote : Quote A}} -> Quote (List A)
-  ListQuote = record
-    { deepQuote = foldr (λ x r -> vis₂ con (quote _∷_) (deepQuote x) r)
-                        (quoteTerm (List Term ∋ []))
+  ℕReify : Reify ℕ
+  ℕReify = record
+    { reify = fold (quoteTerm 0) (vis₁ con (quote suc))
+    }
+
+  ListReify : ∀ {α} {A : Set α} {{aReify : Reify A}} -> Reify (List A)
+  ListReify = record
+    { reify = foldr (λ x r -> vis₂ con (quote _∷_) (reify x) r) (quoteTerm (List Term ∋ []))
     }  
 
   ArgFunctor : RawFunctor Arg
-  ArgFunctor = record { _<$>_ = λ{ f (arg i x) -> arg i (f x) } }
+  ArgFunctor = record
+    { _<$>_ = λ{ f (arg i x) -> arg i (f x) }
+    }
 
   AbsFunctor : RawFunctor Abs
-  AbsFunctor = record { _<$>_ = λ{ f (abs s x) -> abs s (f x) } }
+  AbsFunctor = record
+    { _<$>_ = λ{ f (abs s x) -> abs s (f x) }
+    }
 
   TCMonad : ∀ {α} -> RawMonad {α} TC
   TCMonad = record
