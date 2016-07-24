@@ -2,20 +2,20 @@ module Generic.Examples.ReadData where
 
 open import Generic.Main
 
-data D (A : Set) (B : ℕ -> Set) : ∀ n -> B n -> Set where
-  c₁ : ∀ {n} y -> D A B n y
-  c₂ : ∀ {y} -> (∀ {n} y -> D A B n y) -> List ℕ -> D A B 0 y 
+data D {α β} (A : Set α) (B : ℕ -> Set β) : ∀ {n} -> B n -> List ℕ -> Set (α ⊔ β) where
+  c₁ : ∀ {n} (y : B n) xs -> D A B y xs
+  c₂ : ∀ {y : B 0} xs -> (∀ {n} (y : B n) -> D A B y xs) -> List A -> D A B y xs 
 
-D′ : ∀ (A : Set) (B : ℕ -> Set) n -> B n -> Set
+D′ : ∀ {α β} (A : Set α) (B : ℕ -> Set β) {n} -> B n -> List ℕ -> Set (α ⊔ β)
 D′ = readData D
 
-pattern c₁′ {n} y    = #₀  (n , y , lrefl)
-pattern c₂′ {y} r xs = !#₁ (y , r , xs , lrefl)
+pattern c₁′ {n} y xs    = #₀  (n , y , xs , lrefl)
+pattern c₂′ {y} xs r ys = !#₁ (y , xs , r , ys , lrefl)
 
-inj : ∀ {A B n y} -> D A B n y -> D′ A B n y
-inj (c₁ y)    = c₁′ y
-inj (c₂ r xs) = c₂′ (λ x -> inj (r x)) xs
+inj : ∀ {α β} {A : Set α} {B : ℕ -> Set β} {n xs} {y : B n} -> D A B y xs -> D′ A B y xs
+inj (c₁ y xs)    = c₁′ y xs
+inj (c₂ xs r ys) = c₂′ xs (λ x -> inj (r x)) ys
 
-outj : ∀ {A B n y} -> D′ A B n y -> D A B n y
-outj (c₁′ y)    = c₁ y
-outj (c₂′ r xs) = c₂ (λ x -> outj (r x)) xs
+outj : ∀ {α β} {A : Set α} {B : ℕ -> Set β} {n xs} {y : B n} -> D′ A B y xs -> D A B y xs
+outj (c₁′ y xs)    = c₁ y xs
+outj (c₂′ xs r ys) = c₂ xs (λ x -> outj (r x)) ys
