@@ -39,7 +39,7 @@ quoteData d =
   getData d >>= uncurry λ p nas ->
   getType d >>= λ ab ->
     case takePi p ab ⊗ (dropPi p ab ⊗ mapM (dropPi p >=> quoteCons d p) (map proj₂ nas)) of λ
-      {  nothing            -> typeError (strErr "failed" ∷ [])
+      {  nothing            -> typeError (strErr "can't read a non-strictly positive data type" ∷ [])
       ; (just (a , b , cs)) -> return ∘′ craftLams a ∘′ curryBy b $
            vis₁ def (quote μ) (reify (zip (map proj₁ nas) cs))
       }

@@ -80,7 +80,7 @@ test = refl
 
 Equality for `Vec`s, `List`s and `Fin`s is derived automatically.
 
-The `/Generic.Property.Reify.agda` module implements coercion from described data types to `Term`s (from the `Reflection` module). Since stored names of described constructors are taken from actual constructors, we can also coerce elements of described data types to elements of actual data types. It looks like this:
+The `/Generic/Property/Reify.agda` module implements coercion from described data types to `Term`s (from the `Reflection` module). Since stored names of described constructors are taken from actual constructors, we can also coerce elements of described data types to elements of actual data types. It looks like this:
 
 ```
 record Reify {α} (A : Set α) : Set α where
