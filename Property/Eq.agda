@@ -18,7 +18,7 @@ mutual
 
 instance
   {-# TERMINATING #-} -- Why?
-  DescEq : ∀ {i β} {I : Set i} {D : Desc I β} {j} {{eqD : All ExtendEq D}} -> Eq (μ D j)
+  DescEq : ∀ {i β} {I : Set i} {D : Desc I β} {j} {{eqD : All (ExtendEq ∘ proj₂) D}} -> Eq (μ D j)
   DescEq {ι} {β = β} {I = I} {D = D₀} = record { _≟_ = decMu } where
     mutual
       decSem : ∀ D {{eqD : SemEq D}} -> IsSet (⟦ D ⟧ (μ D₀))
@@ -40,11 +40,12 @@ instance
           splitWith₂ q _#_ p₁ p₂ λ x₁ x₂ e₁ e₂ ->
             _≟_ {{eqA}} x₁ x₂ <,>ᵈᵒ decExtend (D x₁) {{eqD}} e₁
 
-      decAny : ∀ {j} D {{eqD : All ExtendEq D}} -> IsSet (Any (λ C -> Extend C (μ D₀) j) D)
+      decAny : ∀ {j} (D : Desc I β) {{eqD : All (ExtendEq ∘ proj₂) D}}
+             -> IsSet (Any (proj₂ >>> λ C -> Extend C (μ D₀) j) D)
       decAny  []                          () ()
-      decAny (C ∷ [])      {{eqC , _}}    e₁ e₂ = decExtend C {{eqC}} e₁ e₂
+      decAny (C ∷ [])      {{eqC , _}}    e₁ e₂ = decExtend (proj₂ C) {{eqC}} e₁ e₂
       decAny (C₁ ∷ C₂ ∷ D) {{eqC₁ , eqD}} s₁ s₂ =
-        decSum (decExtend C₁ {{eqC₁}}) (decAny (C₂ ∷ D) {{eqD}}) s₁ s₂
+        decSum (decExtend (proj₂ C₁) {{eqC₁}}) (decAny (C₂ ∷ D) {{eqD}}) s₁ s₂
 
       decMu : ∀ {j} -> IsSet (μ D₀ j)
       decMu (node e₁) (node e₂) = dcong node node-inj (decAny D₀ e₁ e₂)

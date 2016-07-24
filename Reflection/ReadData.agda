@@ -36,11 +36,12 @@ quoteCons d p  t                                     = join $ quoteHyp d p t
 
 quoteData : Name -> TC Term
 quoteData d =
-  getData d >>= uncurry λ p as ->
+  getData d >>= uncurry λ p nas ->
   getType d >>= λ ab ->
-    case takePi p ab ⊗ (dropPi p ab ⊗ mapM (dropPi p >=> quoteCons d p) as) of λ
+    case takePi p ab ⊗ (dropPi p ab ⊗ mapM (dropPi p >=> quoteCons d p) (map proj₂ nas)) of λ
       {  nothing            -> typeError (strErr "failed" ∷ [])
-      ; (just (a , b , cs)) -> return ∘′ craftLams a ∘′ curryBy b $ vis₁ def (quote μ) (deepQuote cs)
+      ; (just (a , b , cs)) -> return ∘′ craftLams a ∘′ curryBy b $
+           vis₁ def (quote μ) (deepQuote (zip (map proj₁ nas) cs))
       }
 
 macro

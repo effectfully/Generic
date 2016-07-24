@@ -57,7 +57,12 @@ instance
   NameEq = viaBase _≟-Name_
 
   TermQuote : Quote Term
-  TermQuote = record { deepQuote = id }
+  TermQuote = record
+    { deepQuote = id
+    }
+
+  NameQuote : Quote Name
+  NameQuote = record { deepQuote = lit ∘′ name }
 
   VisibilityQuote : Quote Visibility
   VisibilityQuote = record
@@ -67,6 +72,12 @@ instance
       ; inst -> quoteTerm inst
       }
     }
+
+  ProdQuote : ∀ {α β} {A : Set α} {B : A -> Set β}
+                {{aQuote : Quote A}} {{bQuote : ∀ {x} -> Quote (B x)}} -> Quote (Σ A B)
+  ProdQuote = record
+    { deepQuote = uncurry λ x y -> vis₂ con (quote _,_) (deepQuote x) (deepQuote y)
+    }                
 
   ListQuote : ∀ {α} {A : Set α} {{aQuote : Quote A}} -> Quote (List A)
   ListQuote = record
@@ -139,8 +150,8 @@ craftLams (rpi (earg a ) (abs s b)) t = elam s (craftLams b t)
 craftLams (rpi  _        (abs s b)) t = craftLams b t
 craftLams  _                        t = t
 
-getData : Name -> TC (ℕ × List Type)
+getData : Name -> TC (ℕ × List (Name × Type))
 getData = getDefinition >=> λ
-  { (data-type n cs) -> _,_ n <$> mapM getType cs
+  { (data-type n cs) -> _,_ n <$> mapM (λ c -> _,_ c <$> getType c) cs
   ;  _               -> typeError (strErr "not a data" ∷ [])
   }

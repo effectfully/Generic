@@ -88,7 +88,7 @@ mutual
   Extendᵇ (coerce (A , D)) q B j = Coerce′ q $ ∃ λ x -> Extend (D x) B j
 
 Desc : ∀ {ι} -> Set ι -> ∀ β -> Set (ι ⊔ lsuc β)
-Desc I β = List (Cons I β)
+Desc I β = List (Name × Cons I β)
 
 module _ {ι β} {I : Set ι} (D : Desc I β) where
   mutual
@@ -96,7 +96,7 @@ module _ {ι β} {I : Set ι} (D : Desc I β) where
       node : Node j -> μ j
 
     Node : I -> Set β
-    Node j = Any (λ C -> Extend C μ j) D
+    Node j = Any (proj₂ >>> λ C -> Extend C μ j) D
 
 node-inj : ∀ {i β} {I : Set i} {D : Desc I β} {j} {e₁ e₂ : Node D j}
          -> node {D = D} e₁ ≡ node e₂ -> e₁ ≡ e₂

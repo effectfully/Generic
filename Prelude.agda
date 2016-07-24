@@ -15,9 +15,7 @@ open import Data.Sum renaming (map to smap) public
 open import Data.Product renaming (map to pmap; zip to pzip) hiding (_,′_) public
 open import Data.List.Base public
 
-open import Data.Maybe.Base hiding (Any; All; map)
-import Data.Maybe as Maybe
-import Data.List as List
+infixl 1 _>>>_
 
 data ⊥ {α} : Set α where
 record ⊤ {α} : Set α where
@@ -28,6 +26,10 @@ record ⊤ {α} : Set α where
 
 tt₀ : ⊤₀
 tt₀ = tt
+
+_>>>_ : ∀ {α β γ} {A : Set α} {B : A -> Set β} {C : ∀ {x} -> B x -> Set γ}
+      -> (f : ∀ x -> B x) -> (∀ {x} -> (y : B x) -> C y) -> ∀ x -> C (f x)
+(f >>> g) x = g (f x)
 
 Any : ∀ {α β} {A : Set α} -> (A -> Set β) -> List A -> Set β
 Any B  []      = ⊥

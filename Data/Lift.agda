@@ -1,10 +1,10 @@
 module Generic.Data.Lift where
 
-open import Generic.Core hiding (Lift; lift; lower)
+open import Generic.Core as Core hiding (Lift; lift; lower)
 
 Lift : ∀ {α} β -> Set α -> Set (α ⊔ β)
 Lift β A = μ′
-         $ (A ⇒ pos)
+         $ (quote Core.lift , A ⇒ pos)
          ∷ []
 
 pattern lift x = !#₀ (x , lrefl)
