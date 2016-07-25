@@ -54,10 +54,10 @@ mutual
     Coerce′ (cong (γ ⊔_) q) $ Pi v A λ x -> Elim C (D x) (k ∘ coerce′ q ∘ _,_ x)
 
 module _ {ι β γ} {I : Set ι} {D₀ : Desc I β} (C : ∀ {j} -> μ D₀ j -> Set γ) where
-  K : Desc I β -> Set _
+  K : Desc I β -> Set (ι ⊔ β)
   K D = ∀ {j} -> Node D₀ D j -> μ D₀ j
 
-  Elims : (D : Desc I β) -> K D -> Set _
+  Elims : (D : Desc I β) -> K D -> Set (β ⊔ γ)
   Elims = AllAny (λ j -> proj₂ >>> λ D -> Extend D (μ D₀) j) (Elim C ∘ proj₂)
 
   module _ (hs : Elims D₀ node) where
@@ -77,9 +77,9 @@ module _ {ι β γ} {I : Set ι} {D₀ : Desc I β} (C : ∀ {j} -> μ D₀ j ->
                  -> Elim C D k
                  -> (e : Extend D (μ D₀) j)
                  -> C (k e)
-      elimExtend (var i)    z       lrefl   = lower z
-      elimExtend (π q v D)  h       p       = elimExtendᵇ D h p 
-      elimExtend (D ⊛ E)    h      (d , e)  with varView D
+      elimExtend (var i)   z  lrefl  = lower z
+      elimExtend (π q v D) h  p      = elimExtendᵇ D h p 
+      elimExtend (D ⊛ E)   h (d , e) with varView D
       ... | yes-var = elimExtend E (h (elim d))  e
       ... | no-var  = elimExtend E (h (elimHyp D d)) e
 

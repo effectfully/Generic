@@ -11,4 +11,4 @@ elimVec′ : ∀ {n α π} {A : Set α}
          -> P []ᵥ
          -> (xs : Vec A n)
          -> P xs
-elimVec′ P f z = elim P (lift z , λ x {_} r -> lift (f x r))
+elimVec′ P f z = elim P (lift z , λ x r -> lift (f x r))
