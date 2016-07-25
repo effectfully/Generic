@@ -96,11 +96,21 @@ instance
                 {{reD : All (ExtendReify ∘ proj₂) D}} -> Reify (μ D j)
   DescReify = ...
 
+open import Generic.Data.Fin
+open import Generic.Data.Vec
+
+open import Data.Fin renaming (Fin to StdFin)
+open import Data.Vec renaming (Vec to StdVec)
+
 xs : Vec (Fin 4) 3
 xs = fsuc (fsuc (fsuc fzero)) ∷ᵥ fzero ∷ᵥ fsuc fzero ∷ᵥ []ᵥ
 
-test : reflect xs ≡ suc (suc (suc zero)) ∷ zero ∷ (Fin.Fin 4 ∋ suc zero) ∷ []
+xs′ : StdVec (StdFin 4) 3
+xs′ = suc (suc (suc zero)) ∷ zero ∷ (suc zero) ∷ []
+
+test : reflect xs ≡ xs′
 test = refl
+
 ```
 
 There are also generic `elim` and `lookup`, but they are outdated and don't work currently.
