@@ -80,7 +80,7 @@ test = refl
 
 Equality for `Vec`s, `List`s and `Fin`s is derived automatically.
 
-The `/Generic/Property/Reify.agda` module implements coercion from described data types to `Term`s (from the `Reflection` module). Since stored names of described constructors are taken from actual constructors, we can also coerce elements of described data types to elements of actual data types. It looks like this:
+The `/Generic/Property/Reify.agda` module implements coercion from described data types to `Term`s (from the `Reflection` module). Since stored names of described constructors are taken from actual constructors, reified elements of described data types are actually quoted elements of actual data types and hence the former can be converted to the latter:
 
 ```
 record Reify {α} (A : Set α) : Set α where
@@ -91,14 +91,15 @@ record Reify {α} (A : Set α) : Set α where
     reflect = unify ∘ reify
 open Reify {{...}} public
 
-DescReify : ∀ {i β} {I : Set i} {D : Desc I β} {j}
-              {{reD : All (ExtendReify ∘ proj₂) D}} -> Reify (μ D j)
-DescReify = ...
+instance
+  DescReify : ∀ {i β} {I : Set i} {D : Desc I β} {j}
+                {{reD : All (ExtendReify ∘ proj₂) D}} -> Reify (μ D j)
+  DescReify = ...
 
-vec : Vec (Fin 4) 3
-vec = fsuc (fsuc (fsuc fzero)) ∷ᵥ fzero ∷ᵥ fsuc fzero ∷ᵥ []ᵥ
+xs : Vec (Fin 4) 3
+xs = fsuc (fsuc (fsuc fzero)) ∷ᵥ fzero ∷ᵥ fsuc fzero ∷ᵥ []ᵥ
 
-test : reflect vec ≡ suc (suc (suc zero)) ∷ zero ∷ (Fin.Fin 4 ∋ suc zero) ∷ []
+test : reflect xs ≡ suc (suc (suc zero)) ∷ zero ∷ (Fin.Fin 4 ∋ suc zero) ∷ []
 test = refl
 ```
 

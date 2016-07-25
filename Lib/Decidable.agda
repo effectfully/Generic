@@ -29,6 +29,24 @@ record Eq {α} (A : Set α) : Set α where
   x == y = ⌊ x ≟ y ⌋ 
 open Eq {{...}} public
 
+record _↦_ {α} (A B : Set α) : Set α where
+  field
+    to      : A -> B
+    from    : B -> A
+    from-to : from ∘ to ≗ id
+
+-- Can't make it an instance, because otherwise it unreasonably breaks instance search.
+viaInj : ∀ {α} {A B : Set α} {{bEq : Eq B}} -> A ↦ B -> Eq A
+viaInj {A = A} {B} inj = record
+  { _≟_ = flip (via-injection {A = ≡-Setoid A} {B = ≡-Setoid B}) _≟_ $ record
+      { to        = record
+          { _⟨$⟩_ = to
+          ; cong  = cong to
+          }
+      ; injective = λ q -> right (from-to _) (trans (cong from q) (from-to _))
+      }
+  } where open _↦_ inj
+    
 _#_ : ∀ {α} {A : Set α} -> A -> A -> Set
 x # y = Dec (x ≡ y)
 
@@ -92,10 +110,10 @@ module _ where
   viaBase : ∀ {α} {A : Set α} -> Decidable (B._≡_ {A = A}) -> Eq A
   viaBase d = record
     { _≟_ = flip (via-injection {A = ≡-Setoid _} {B = B.setoid _}) d $ record
-      { to = record
-        { _⟨$⟩_ = id
-        ; cong  = lowerBase
+        { to = record
+            { _⟨$⟩_ = id
+            ; cong  = lowerBase
+            }
+        ; injective = liftBase
         }
-      ; injective = liftBase
-      }
     }

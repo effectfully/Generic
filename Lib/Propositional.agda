@@ -19,6 +19,12 @@ sym refl = refl
 trans : ∀ {α} {A : Set α} {x y z : A} -> x ≡ y -> y ≡ z -> x ≡ z
 trans refl refl = refl
 
+left : ∀ {α} {A : Set α} {x y z : A} -> y ≡ x -> z ≡ x -> y ≡ z
+left refl refl = refl
+
+right : ∀ {α} {A : Set α} {x y z : A} -> x ≡ y -> x ≡ z -> y ≡ z
+right refl refl = refl
+
 subst : ∀ {α β} {A : Set α} {x y} -> (B : A -> Set β) -> x ≡ y -> B x -> B y
 subst B refl z = z
 

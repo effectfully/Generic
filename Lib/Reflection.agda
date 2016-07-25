@@ -73,10 +73,10 @@ instance
   VisibilityReify : Reify Visibility
   VisibilityReify = record
     { reify = λ
-      { expl -> quoteTerm expl
-      ; impl -> quoteTerm impl
-      ; inst -> quoteTerm inst
-      }
+        { expl -> quoteTerm expl
+        ; impl -> quoteTerm impl
+        ; inst -> quoteTerm inst
+        }
     }
 
   ProdReify : ∀ {α β} {A : Set α} {B : A -> Set β}
