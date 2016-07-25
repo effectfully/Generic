@@ -40,8 +40,7 @@ instance
         split q eqC λ eqA eqD -> splitWith₂ q _#_ p₁ p₂ λ x₁ x₂ e₁ e₂ ->
           _≟_ {{eqA}} x₁ x₂ <,>ᵈᵒ decExtend (D x₁) {{eqD}} e₁
 
-      decAny : ∀ {j} (D : Desc I β) {{eqD : All (ExtendEq ∘ proj₂) D}}
-             -> IsSet (Any (proj₂ >>> λ C -> Extend C (μ D₀) j) D)
+      decAny : ∀ {j} (D : Desc I β) {{eqD : All (ExtendEq ∘ proj₂) D}} -> IsSet (Node D₀ D j)
       decAny  []                        () ()
       decAny (C ∷ [])     {{eqC , _}}   e₁ e₂ = decExtend (proj₂ C) {{eqC}} e₁ e₂
       decAny (C ∷ C′ ∷ D) {{eqC , eqD}} s₁ s₂ =

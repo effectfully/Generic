@@ -29,8 +29,15 @@ app inst y x = y
 Coerce′ : ∀ {α β} -> α ≡ β -> Set α -> Set β
 Coerce′ refl = id
 
+coerce′ : ∀ {α β} {A : Set α} -> (q : α ≡ β) -> A -> Coerce′ q A
+coerce′ refl = id
+
 uncoerce′ : ∀ {α β} {A : Set α} -> (q : α ≡ β) -> Coerce′ q A -> A
 uncoerce′ refl = id
+
+inspectUncoerce′ : ∀ {α β} {A : Set α}
+                 -> (q : α ≡ β) -> (p : Coerce′ q A) -> ∃ λ x -> p ≡ coerce′ q x
+inspectUncoerce′ refl x = x , refl
 
 split : ∀ {α β γ δ} {A : Set α} {B : A -> Set β} {C : Set γ}
        -> (q : α ⊔ β ≡ δ) -> Coerce′ q (Σ A B) -> (∀ x -> B x -> C) -> C
@@ -64,9 +71,9 @@ pattern pi   A D = π _ expl (coerce (A , D))
 pattern ipi  A D = π _ impl (coerce (A , D))
 pattern iipi A D = π _ inst (coerce (A , D))
 
-{-# DISPLAY π q expl (coerce (A , D)) = pi   A D #-}
-{-# DISPLAY π q impl (coerce (A , D)) = ipi  A D #-}
-{-# DISPLAY π q inst (coerce (A , D)) = iipi A D #-}
+{-# DISPLAY π _ expl (coerce (A , D)) = pi   A D #-}
+{-# DISPLAY π _ impl (coerce (A , D)) = ipi  A D #-}
+{-# DISPLAY π _ inst (coerce (A , D)) = iipi A D #-}
 
 _⇒_ : ∀ {ι α β} {I : Set ι} {{q : α ≤ℓ β}} -> Set α -> Cons I β -> Cons I β
 _⇒_ {{q}} A D = π q expl (gcoerce (A , λ _ -> D))
@@ -97,12 +104,12 @@ Desc I β = List (Name × Cons I β)
 module _ {ι β} {I : Set ι} (D : Desc I β) where
   mutual
     data μ j : Set β where
-      node : Node j -> μ j
+      node : Node D j -> μ j
 
-    Node : I -> Set β
-    Node j = Any (proj₂ >>> λ C -> Extend C μ j) D
+    Node : Desc I β -> I -> Set β
+    Node D′ j = Any (proj₂ >>> λ C -> Extend C μ j) D′
 
-node-inj : ∀ {i β} {I : Set i} {D : Desc I β} {j} {e₁ e₂ : Node D j}
+node-inj : ∀ {i β} {I : Set i} {D : Desc I β} {j} {e₁ e₂ : Node D D j}
          -> node {D = D} e₁ ≡ node e₂ -> e₁ ≡ e₂
 node-inj refl = refl
 

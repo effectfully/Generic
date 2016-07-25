@@ -51,7 +51,7 @@ instance
       reifyCons (n , C) e = vis con n (reifyExtend C e)
 
       reifyAny : ∀ {j} (D : Desc I β) {{reD : All (ExtendReify ∘ proj₂) D}}
-               -> Any (proj₂ >>> λ C -> Extend C (μ D₀) j) D -> Term
+               -> Node D₀ D j -> Term
       reifyAny  []                         ()
       reifyAny (C ∷ [])     {{reC , _}}    e       = reifyCons C {{reC}} e
       reifyAny (C ∷ C′ ∷ D) {{reC , reD}} (inj₁ e) = reifyCons C {{reC}} e
