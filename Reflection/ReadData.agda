@@ -1,7 +1,7 @@
 module Generic.Reflection.ReadData where
 
 open import Generic.Core
-open import Generic.Function.FoldUp
+open import Generic.Function.FoldMono
 
 open import Data.Unit.Base
 open import Data.Maybe.Base hiding (map)

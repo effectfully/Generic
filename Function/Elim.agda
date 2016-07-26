@@ -1,3 +1,5 @@
+-- Under reconstruction.
+
 module Generic.Function.Elim where
 
 open import Generic.Core
@@ -12,17 +14,17 @@ AllAny B D  []          k = ⊤
 AllAny B D (x ∷ [])     k = D x k
 AllAny B D (x ∷ y ∷ xs) k = D x (k ∘ inj₁) × AllAny B D (y ∷ xs) (k ∘ inj₂)
 
-data VarView {ι β} {I : Set ι} : Cons I β -> Set where
+data VarView {ι β} {I : Set ι} : Desc I β -> Set where
   yes-var : ∀ {i} -> VarView (var i)
   no-var  : ∀ {D} -> VarView D
 
-varView : ∀ {ι β} {I : Set ι} -> (D : Cons I β) -> VarView D
+varView : ∀ {ι β} {I : Set ι} -> (D : Desc I β) -> VarView D
 varView (var i) = yes-var
 varView  D      = no-var
 
 mutual
   Hyp : ∀ {ι β γ} {I : Set ι} {B}
-      -> (∀ {i} -> B i -> Set γ) -> (D : Cons I β) -> ⟦ D ⟧ B -> Set (β ⊔ γ)
+      -> (∀ {i} -> B i -> Set γ) -> (D : Desc I β) -> ⟦ D ⟧ B -> Set (β ⊔ γ)
   Hyp {β = β} C (var i)    y      = Lift {ℓ = β} (C y)
   Hyp         C (π q v D)  f      = Hypᵇ C D f
   Hyp         C (D ⊛ E)   (x , y) = Hyp C D x × Hyp C E y
@@ -35,7 +37,7 @@ mutual
 mutual
   Elim : ∀ {ι β γ} {I : Set ι} {B}
        -> (∀ {i} -> B i -> Set γ)
-       -> (D : Cons I β)
+       -> (D : Desc I β)
        -> (∀ {j} -> Extend D B j -> B j)
        -> Set (β ⊔ γ)
   Elim {β = β} C (var i)   k = Lift {ℓ = β} (C (k lrefl))
@@ -53,17 +55,17 @@ mutual
   Elimᵇ {γ = γ} {q = q} C (coerce (A , D)) v k =
     Coerce′ (cong (γ ⊔_) q) $ Pi v A λ x -> Elim C (D x) (k ∘ coerce′ q ∘ _,_ x)
 
-module _ {ι β γ} {I : Set ι} {D₀ : Desc I β} (C : ∀ {j} -> μ D₀ j -> Set γ) where
-  K : Desc I β -> Set (ι ⊔ β)
+module _ {ι β γ} {I : Set ι} {D₀ : Data I β} (C : ∀ {j} -> μ D₀ j -> Set γ) where
+  K : Data I β -> Set (ι ⊔ β)
   K D = ∀ {j} -> Node D₀ D j -> μ D₀ j
 
-  Elims : (D : Desc I β) -> K D -> Set (β ⊔ γ)
+  Elims : (D : Data I β) -> K D -> Set (β ⊔ γ)
   Elims = AllAny (λ j -> proj₂ >>> λ D -> Extend D (μ D₀) j) (Elim C ∘ proj₂)
 
   module _ (hs : Elims D₀ node) where
     {-# TERMINATING #-}
     mutual
-      elimHyp : (D : Cons I β) -> (d : ⟦ D ⟧ (μ D₀)) -> Hyp C D d
+      elimHyp : (D : Desc I β) -> (d : ⟦ D ⟧ (μ D₀)) -> Hyp C D d
       elimHyp (var i)    d      = lift (elim d)
       elimHyp (π q v D)  f      = elimHypᵇ D f
       elimHyp (D ⊛ E)   (x , y) = elimHyp D x , elimHyp E y
@@ -73,7 +75,7 @@ module _ {ι β γ} {I : Set ι} {D₀ : Desc I β} (C : ∀ {j} -> μ D₀ j ->
         coerce′ (cong (_⊔_ γ) q) (lam v λ x -> elimHyp (D x) (app v (uncoerce′ q f) x))
 
       elimExtend : ∀ {j}
-                 -> (D : Cons I β) {k : ∀ {j} -> Extend D (μ D₀) j -> μ D₀ j}
+                 -> (D : Desc I β) {k : ∀ {j} -> Extend D (μ D₀) j -> μ D₀ j}
                  -> Elim C D k
                  -> (e : Extend D (μ D₀) j)
                  -> C (k e)
@@ -91,7 +93,7 @@ module _ {ι β γ} {I : Set ι} {D₀ : Desc I β} (C : ∀ {j} -> μ D₀ j ->
       elimExtendᵇ {q = q} {v = v} (coerce (A , D)) h p with p | inspectUncoerce′ q p
       ... | _ | (x , e) , refl = elimExtend (D x) (app v (uncoerce′ (cong (γ ⊔_) q) h) x) e
 
-      elimAny : ∀ {j} (D : Desc I β) {k : K D} -> Elims D k -> (a : Node D₀ D j) -> C (k a)
+      elimAny : ∀ {j} (D : Data I β) {k : K D} -> Elims D k -> (a : Node D₀ D j) -> C (k a)
       elimAny  []           tt       ()
       elimAny (C ∷ [])      h        e       = elimExtend (proj₂ C) h e
       elimAny (C ∷ C′ ∷ D) (h , hs) (inj₁ e) = elimExtend (proj₂ C) h e
