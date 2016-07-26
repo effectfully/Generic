@@ -47,6 +47,9 @@ vis₂ k f x₁ x₂ = vis k f (x₁ ∷ x₂ ∷ [])
 vis₃ : {A : Set} -> (A -> List (Arg Term) -> Term) -> A -> Term -> Term -> Term -> Term
 vis₃ k f x₁ x₂ x₃ = vis k f (x₁ ∷ x₂ ∷ x₃ ∷ [])
 
+vis₄ : {A : Set} -> (A -> List (Arg Term) -> Term) -> A -> Term -> Term -> Term -> Term -> Term
+vis₄ k f x₁ x₂ x₃ x₄ = vis k f (x₁ ∷ x₂ ∷ x₃ ∷ x₄ ∷ [])
+
 elam : String -> Term -> Term
 elam s = rlam expl ∘ abs s
 
@@ -92,7 +95,7 @@ instance
 
   ListReify : ∀ {α} {A : Set α} {{aReify : Reify A}} -> Reify (List A)
   ListReify = record
-    { reify = foldr (λ x r -> vis₂ con (quote _∷_) (reify x) r) (quoteTerm (List Term ∋ []))
+    { reify = foldr (vis₂ con (quote _∷_) ∘ reify) (quoteTerm (List Term ∋ []))
     }  
 
   ArgFunctor : RawFunctor Arg
@@ -166,6 +169,8 @@ craftLams  _                        t = t
 
 getData : Name -> TC (ℕ × List (Name × Type))
 getData = getDefinition >=> λ
-  { (data-type n cs) -> _,_ n <$> mapM (λ c -> _,_ c <$> getType c) cs
-  ;  _               -> typeError (strErr "not a data" ∷ [])
+  { (data-type n cs)           -> _,_ n <$> mapM (λ c -> _,_ c <$> getType c) cs
+  -- Why the sudden qualification, what am I doing wrong?
+  ; (Definition.record-type c) -> (λ a -> 1 , (c , a) ∷ []) <$> getType c
+  ;  _                         -> typeError (strErr "not a data" ∷ [])
   }

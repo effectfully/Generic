@@ -1,11 +1,11 @@
 module Generic.Data.Lift where
 
-open import Generic.Core as Core hiding (Lift; lift; lower)
+open import Generic.Main as Main hiding (Lift; lift; lower)
+
+-- `readData Main.Lift` doesn't work.
 
 Lift : ∀ {α} β -> Set α -> Set (α ⊔ β)
-Lift β A = μ′
-         $ (quote Core.lift , A ⇒ pos)
-         ∷ []
+Lift β A = μ′ (packData (quote Main.Lift) 3 ((A ⇒ pos) ∷ []) (quote Main.lift , tt))
 
 pattern lift x = !#₀ (x , lrefl)
 

@@ -2,13 +2,13 @@ module Generic.Property.Eq where
 
 open import Generic.Core
 
-SemEq : ∀ {i β} {I : Set i} -> Cons I β -> Set
+SemEq : ∀ {i β} {I : Set i} -> Desc I β -> Set
 SemEq (var i)   = ⊤
 SemEq (π q v C) = ⊥
 SemEq (D ⊛ E)   = SemEq D × SemEq E
 
 mutual
-  ExtendEq : ∀ {i β} {I : Set i} -> Cons I β -> Set β
+  ExtendEq : ∀ {i β} {I : Set i} -> Desc I β -> Set β
   ExtendEq (var i)   = ⊤
   ExtendEq (π q v C) = ExtendEqᵇ C q
   ExtendEq (D ⊛ E)   = SemEq D × ExtendEq E
@@ -18,9 +18,9 @@ mutual
 
 instance
   {-# TERMINATING #-} -- Why?
-  DescEq : ∀ {i β} {I : Set i} {D : Desc I β} {j}
-             {{eqD : All (ExtendEq ∘ proj₂) D}} -> Eq (μ D j)
-  DescEq {ι} {β = β} {I = I} {D = D₀} = record { _≟_ = decMu } where
+  DataEq : ∀ {i β} {I : Set i} {D : Data I β} {j}
+             {{eqD : All ExtendEq (constructors D)}} -> Eq (μ D j)
+  DataEq {ι} {β = β} {I = I} {D = D₀} = record { _≟_ = decMu } where
     mutual
       decSem : ∀ D {{eqD : SemEq D}} -> IsSet (⟦ D ⟧ (μ D₀))
       decSem (var i)                  d₁        d₂       = decMu d₁ d₂
@@ -40,11 +40,13 @@ instance
         split q eqC λ eqA eqD -> splitWith₂ q _#_ p₁ p₂ λ x₁ x₂ e₁ e₂ ->
           _≟_ {{eqA}} x₁ x₂ <,>ᵈᵒ decExtend (D x₁) {{eqD}} e₁
 
-      decAny : ∀ {j} (D : Desc I β) {{eqD : All (ExtendEq ∘ proj₂) D}} -> IsSet (Node D₀ D j)
-      decAny  []                        () ()
-      decAny (C ∷ [])     {{eqC , _}}   e₁ e₂ = decExtend (proj₂ C) {{eqC}} e₁ e₂
-      decAny (C ∷ C′ ∷ D) {{eqC , eqD}} s₁ s₂ =
-        decSum (decExtend (proj₂ C) {{eqC}}) (decAny (C′ ∷ D) {{eqD}}) s₁ s₂
+      decAny : ∀ {j} (Ds : List (Desc I β)) {{eqD : All ExtendEq Ds}}
+             -> ∀ n p ns -> IsSet (Node D₀ (packData n p Ds ns) j)
+      decAny  []                         n p  ns      () ()
+      decAny (D ∷ [])     {{eqD , _}}    n p  ns      e₁ e₂ = decExtend D {{eqD}} e₁ e₂
+      decAny (D ∷ E ∷ Ds) {{eqD , eqDs}} n p (_ , ns) s₁ s₂ =
+        decSum (decExtend D {{eqD}}) (decAny (E ∷ Ds) {{eqDs}} n p ns) s₁ s₂
 
       decMu : ∀ {j} -> IsSet (μ D₀ j)
-      decMu (node e₁) (node e₂) = dcong node node-inj (decAny D₀ e₁ e₂)
+      decMu (node e₁) (node e₂) = dcong node node-inj $
+        decAny (constructors D₀) (dataName D₀) (dataParam D₀) (consNames D₀) e₁ e₂
