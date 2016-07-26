@@ -58,7 +58,7 @@ outj : ∀ {α β} {A : Set α} {B : ℕ -> Set β} {n xs} {y : B n} -> D′ A B
 outj d = uncoerce d
 ```
 
-Internally it's a bit of reflection sugar on the top of a generic fold defined on described data types (the `/Generic/Function/FoldMono.agda` module).
+Internally it's a bit of reflection sugar on top of a generic fold defined on described data types (the `/Generic/Function/FoldMono.agda` module).
 
 `D′` computes to the following term:
 
