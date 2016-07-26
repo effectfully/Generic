@@ -5,19 +5,27 @@ It's a library for doing generic programming in Agda. Descriptions are defined a
 ```
 mutual
   Binder : ∀ {ι} α β γ -> ι ⊔ lsuc (α ⊔ β) ≡ γ -> Set ι -> Set γ
-  Binder α β γ q I = Coerce q (∃ λ (A : Set α) -> A -> Cons I β)
+  Binder α β γ q I = Coerce q (∃ λ (A : Set α) -> A -> Desc I β)
 
-  data Cons {ι} (I : Set ι) β : Set (ι ⊔ lsuc β) where
-    var : I -> Cons I β
+  data Desc {ι} (I : Set ι) β : Set (ι ⊔ lsuc β) where
+    var : I -> Desc I β
     π   : ∀ {α}
-        -> (q : α ≤ℓ β) -> Visibility -> Binder α β _ (cong (λ αβ -> ι ⊔ lsuc αβ) q) I -> Cons I β
-    _⊛_ : Cons I β -> Cons I β -> Cons I β
+        -> (q : α ≤ℓ β) -> Visibility -> Binder α β _ (cong (λ αβ -> ι ⊔ lsuc αβ) q) I -> Desc I β
+    _⊛_ : Desc I β -> Desc I β -> Desc I β
 
-Desc : ∀ {ι} -> Set ι -> ∀ β -> Set (ι ⊔ lsuc β)
-Desc I β = List (Name × Cons I β)
+record Data {ι} (I : Set ι) β : Set (ι ⊔ lsuc β) where
+  no-eta-equality
+  constructor packData
+  field
+    dataName     : Name
+    paramsType   : Type
+    indicesType  : Type
+    constructors : List (Desc I β)
+    consNames    : All (λ _ -> Name) constructors
+open Data public
 ```
 
-I.e. a description is a list of named constructors, where `Name` comes from the `Reflection` module. That `Coerce` stuff is elaborated in [Emulating cumulativity in Agda](http://effectfully.blogspot.ru/2016/07/cumu.html). Constructors are interpreted in the way described in [Descriptions](http://effectfully.blogspot.ru/2016/04/descriptions.html) (in the `CompProp` module).
+I.e. an encoded data typed is a list of named constructors. It also has a name and is packaged with the telescopes of types of parameters and indices.`Name` and `Type` come from the `Reflection` module. That `Coerce` stuff is elaborated in [Emulating cumulativity in Agda](http://effectfully.blogspot.ru/2016/07/cumu.html). Constructors are interpreted in the way described in [Descriptions](http://effectfully.blogspot.ru/2016/04/descriptions.html) (in the `CompProp` module).
 
 There is some reflection machinery that allows to parse actual Agda data types into their described counterparts. An example from the `/Generic/Examples/ReadData.agda` module:
 
@@ -42,6 +50,15 @@ outj (c₂′ r ys)   = c₂ (λ y -> outj (r y)) ys
 ```
 
 So universe polymorphism is fully supported, as well as implicit and instance arguments, multiple (including single or none) parameters and indices, higher-order inductive occurrences and you can define functions over described data types just like over the actual ones (though, [pattern synonyms are not equal in power to proper constructors](https://github.com/agda/agda/issues/2069)).
+
+There is a generic procedure that allows to coerce elements of described data type to elements of the correposponding actual data types, e.g. `outj` can be defined as
+
+```
+outj : ∀ {α β} {A : Set α} {B : ℕ -> Set β} {n xs} {y : B n} -> D′ A B y xs -> D A B y xs
+outj d = uncoerce d
+```
+
+Internally it's a bit of reflection sugar on the top of a generic fold defined on described data types (the `/Generic/Function/FoldMono.agda` module).
 
 `D′` computes to the following term:
 
@@ -80,7 +97,7 @@ test = refl
 
 Equality for `Vec`s, `List`s and `Fin`s is derived automatically.
 
-The `/Generic/Property/Reify.agda` module implements coercion from described data types to `Term`s (from the `Reflection` module). Since stored names of described constructors are taken from actual constructors, reified elements of described data types are actually quoted elements of actual data types and hence the former can be converted to the latter:
+The `/Generic/Property/Reify.agda` module implements coercion from described data types to `Term`s. Since stored names of described constructors are taken from actual constructors, reified elements of described data types are actually quoted elements of actual data types and hence the former can be converted to the latter (like with `uncoerce`, but deeply):
 
 ```
 record Reify {α} (A : Set α) : Set α where
@@ -110,9 +127,8 @@ xs′ = suc (suc (suc zero)) ∷ zero ∷ (suc zero) ∷ []
 
 test : reflect xs ≡ xs′
 test = refl
-
 ```
 
-There are also generic `elim` in `/Generic/Function/Elim.agda` (the idea is described in [Deriving eliminators of described data types](http://effectfully.blogspot.ru/2016/06/deriving-eliminators-of-described-data.html) and `lookup` in `/Generic/Function/Lookup.agda` (broken currently).
+There are also generic `elim` in `/Generic/Function/Elim.agda` (the idea is described in [Deriving eliminators of described data types](http://effectfully.blogspot.ru/2016/06/deriving-eliminators-of-described-data.html) (broken currently) and `lookup` in `/Generic/Function/Lookup.agda` (broken currently).
 
 The plan is to define decidable equality over actual data types using reflection and the current decidable equality over described data types. Ornaments may or may not appear later.
