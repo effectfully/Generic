@@ -184,15 +184,6 @@ elamsBy (rpi (earg a) (abs s b)) t = elam s (elamsBy b t)
 elamsBy (rpi  _       (abs s b)) t = elamsBy b t
 elamsBy  _                       t = t
 
-euncurryBy : Type -> Term -> Term
-euncurryBy a f = elam "x" $ def (quote id) (earg (shift f) ∷ go a (rvar 0 [])) where
-  go : Term -> Term -> List (Arg Term)
-  go (rpi (earg a)    (abs s b@(rpi _ _))) p =
-    earg (vis₁ def (quote proj₁) p) ∷ go b (vis₁ def (quote proj₂) p)
-  go (rpi  _          (abs s b@(rpi _ _))) p = go b (vis₁ def (quote proj₂) p)
-  go (rpi (earg a) _)                      x = earg x ∷ []
-  go  _                                    t = []
-
 getData : Name -> TC (ℕ × List (Name × Type))
 getData = getDefinition >=> λ
   { (data-type n cs)           -> _,_ n <$> mapM (λ c -> _,_ c <$> getType c) cs

@@ -42,8 +42,8 @@ instance
 
       decAny : ∀ {j} (Ds : List (Desc I β)) {{eqD : All ExtendEq Ds}}
              -> ∀ d a b ns -> IsSet (Node D₀ (packData d a b Ds ns) j)
-      decAny  []                         d a b  ns      () ()
-      decAny (D ∷ [])     {{eqD , _}}    d a b  ns      e₁ e₂ = decExtend D {{eqD}} e₁ e₂
+      decAny  []                         d a b  tt      () ()
+      decAny (D ∷ [])     {{eqD , _}}    d a b (_ , ns) e₁ e₂ = decExtend D {{eqD}} e₁ e₂
       decAny (D ∷ E ∷ Ds) {{eqD , eqDs}} d a b (_ , ns) s₁ s₂ =
         decSum (decExtend D {{eqD}}) (decAny (E ∷ Ds) {{eqDs}} d a b ns) s₁ s₂
 

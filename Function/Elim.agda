@@ -56,13 +56,18 @@ mutual
     Coerce′ (cong (γ ⊔_) q) $ Pi v A λ x -> Elim C (D x) (k ∘ coerce′ q ∘ _,_ x)
 
 module _ {ι β γ} {I : Set ι} {D₀ : Data I β} (C : ∀ {j} -> μ D₀ j -> Set γ) where
-  K : Data I β -> Set (ι ⊔ β)
-  K D = ∀ {j} -> Node D₀ D j -> μ D₀ j
+  K : Name -> Type -> Type -> (Ds : List (Desc I β)) -> All (const Name) Ds -> Set (ι ⊔ β)
+  K d a b Ds ns = ∀ {j} -> Node D₀ (packData d a b Ds ns) j -> μ D₀ j
 
-  Elims : (D : Data I β) -> K D -> Set (β ⊔ γ)
-  Elims = AllAny (λ j -> proj₂ >>> λ D -> Extend D (μ D₀) j) (Elim C ∘ proj₂)
+  Elims : ∀ d a b (Ds : List (Desc I β)) ns -> K d a b Ds ns -> Set (β ⊔ γ)
+  Elims d a b Ds ns = AllAny (λ j D -> Extend D (μ D₀) j) (Elim C) Ds
 
-  module _ (hs : Elims D₀ node) where
+  module _ (hs : Elims (dataName     D₀)
+                       (paramsType   D₀)
+                       (indicesType  D₀)
+                       (constructors D₀)
+                       (consNames    D₀)
+                        node) where
     {-# TERMINATING #-}
     mutual
       elimHyp : (D : Desc I β) -> (d : ⟦ D ⟧ (μ D₀)) -> Hyp C D d
@@ -93,11 +98,18 @@ module _ {ι β γ} {I : Set ι} {D₀ : Data I β} (C : ∀ {j} -> μ D₀ j ->
       elimExtendᵇ {q = q} {v = v} (coerce (A , D)) h p with p | inspectUncoerce′ q p
       ... | _ | (x , e) , refl = elimExtend (D x) (app v (uncoerce′ (cong (γ ⊔_) q) h) x) e
 
-      elimAny : ∀ {j} (D : Data I β) {k : K D} -> Elims D k -> (a : Node D₀ D j) -> C (k a)
-      elimAny  []           tt       ()
-      elimAny (C ∷ [])      h        e       = elimExtend (proj₂ C) h e
-      elimAny (C ∷ C′ ∷ D) (h , hs) (inj₁ e) = elimExtend (proj₂ C) h e
-      elimAny (C ∷ C′ ∷ D) (h , hs) (inj₂ a) = elimAny (C′ ∷ D) hs a
+      elimAny : ∀ {j} (Ds : List (Desc I β)) d a b ns {k : K d a b Ds ns}
+              -> Elims d a b Ds ns k -> (a : Node D₀ (packData d a b Ds ns) j) -> C (k a)
+      elimAny  []          d a b  tt       tt       ()
+      elimAny (D ∷ [])     d a b (n , ns)  h        e       = elimExtend D h e
+      elimAny (D ∷ E ∷ Ds) d a b (n , ns) (h , hs) (inj₁ e) = elimExtend D h e
+      elimAny (D ∷ E ∷ Ds) d a b (n , ns) (h , hs) (inj₂ r) = elimAny (E ∷ Ds) d a b ns hs r
 
       elim : ∀ {j} -> (d : μ D₀ j) -> C d
-      elim (node e) = elimAny D₀ hs e
+      elim (node e) = elimAny (constructors D₀)
+                              (dataName     D₀)
+                              (paramsType   D₀)
+                              (indicesType  D₀)
+                              (consNames    D₀)
+                               hs
+                               e

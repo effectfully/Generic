@@ -57,8 +57,8 @@ module _ {ι β} {I : Set ι} {D₀ : Data I β} (C : I -> Set β) where
       foldAny : ∀ {j} (Ds : List (Desc I β)) d a b ns
               -> All (Fold C) Ds -> Node D₀ (packData d a b Ds ns) j -> C j
       foldAny  []          d a b  tt       tt       ()
-      foldAny (D ∷ [])     d a b  ns      (h , tt)  e       = foldExtend D h e
-      foldAny (D ∷ E ∷ Ds) d a b  ns      (h , hs) (inj₁ e) = foldExtend D h e
+      foldAny (D ∷ [])     d a b (_ , ns) (h , tt)  e       = foldExtend D h e
+      foldAny (D ∷ E ∷ Ds) d a b (_ , ns) (h , hs) (inj₁ e) = foldExtend D h e
       foldAny (D ∷ E ∷ Ds) d a b (_ , ns) (h , hs) (inj₂ r) = foldAny (E ∷ Ds) d a b ns hs r
 
       foldMono : ∀ {j} -> μ D₀ j -> C j

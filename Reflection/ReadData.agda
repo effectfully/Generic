@@ -19,6 +19,15 @@ curryBy = go 0 where
   go n  _                                     t =
     shiftBy n t · pack₁ (map (λ m -> rvar m []) $ downFrom n)
 
+euncurryBy : Type -> Term -> Term
+euncurryBy a f = elam "x" $ def (quote id) (earg (shift f) ∷ go a (rvar 0 [])) where
+  go : Term -> Term -> List (Arg Term)
+  go (rpi (earg a)    (abs s b@(rpi _ _))) p = earg (vis₁ def (quote proj₁) p)
+                                             ∷ go b (vis₁ def (quote proj₂) p)
+  go (rpi  _          (abs s b@(rpi _ _))) p = go b (vis₁ def (quote proj₂) p)
+  go (rpi (earg a) _)                      x = earg x ∷ []
+  go  _                                    t = []
+
 qπ : Visibility -> String -> Term -> Term -> Term 
 qπ v s a b = vis₃ con (quote π) unknown (reify v) $
                vis₁ con (quote coerce) (vis₂ con (quote _,_) a (elam s b))

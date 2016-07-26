@@ -106,7 +106,7 @@ record Data {ι} (I : Set ι) β : Set (ι ⊔ lsuc β) where
     paramsType   : Type
     indicesType  : Type
     constructors : List (Desc I β)
-    consNames    : All (λ _ -> Name) constructors
+    consNames    : All (const Name) constructors
 open Data public
 
 module _ {ι β} {I : Set ι} (D : Data I β) where

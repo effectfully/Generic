@@ -129,6 +129,6 @@ test : reflect xs ≡ xs′
 test = refl
 ```
 
-There are also generic `elim` in `/Generic/Function/Elim.agda` (the idea is described in [Deriving eliminators of described data types](http://effectfully.blogspot.ru/2016/06/deriving-eliminators-of-described-data.html) (broken currently) and `lookup` in `/Generic/Function/Lookup.agda` (broken currently).
+There are also generic `elim` in `/Generic/Function/Elim.agda` (the idea is described in [Deriving eliminators of described data types](http://effectfully.blogspot.ru/2016/06/deriving-eliminators-of-described-data.html) and `lookup` in `/Generic/Function/Lookup.agda` (broken currently).
 
 The plan is to define decidable equality over actual data types using reflection and the current decidable equality over described data types. Ornaments may or may not appear later.
