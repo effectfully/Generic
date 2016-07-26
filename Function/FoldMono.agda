@@ -36,7 +36,7 @@ module _ {ι β} {I : Set ι} {D₀ : Data I β} (C : I -> Set β) where
     {-# TERMINATING #-}
     mutual
       foldHyp : (D : Desc I β) -> ⟦ D ⟧ (μ D₀) -> Hyp C D
-      foldHyp (var i)    d      = uncurryFoldMono d
+      foldHyp (var i)    d      = foldMono d
       foldHyp (π q v D)  f      = foldHypᵇ D f
       foldHyp (D ⊛ E)   (x , y) = foldHyp D x , foldHyp E y
 
@@ -54,16 +54,21 @@ module _ {ι β} {I : Set ι} {D₀ : Data I β} (C : I -> Set β) where
       foldExtendᵇ {q = q} {v = v} (coerce (A , D)) h p with p | inspectUncoerce′ q p
       ... | _ | (x , e) , refl = foldExtend (D x) (app v (uncoerce′ q h) x) e
 
-      foldAny : ∀ {j} (Ds : List (Desc I β)) n a b ns
-              -> All (Fold C) Ds -> Node D₀ (packData n a b Ds ns) j -> C j
-      foldAny  []          n a b  tt       tt       ()
-      foldAny (D ∷ [])     n a b  ns      (h , tt)  e       = foldExtend D h e
-      foldAny (D ∷ E ∷ Ds) n a b  ns      (h , hs) (inj₁ e) = foldExtend D h e
-      foldAny (D ∷ E ∷ Ds) n a b (_ , ns) (h , hs) (inj₂ r) = foldAny (E ∷ Ds) n a b ns hs r
+      foldAny : ∀ {j} (Ds : List (Desc I β)) d a b ns
+              -> All (Fold C) Ds -> Node D₀ (packData d a b Ds ns) j -> C j
+      foldAny  []          d a b  tt       tt       ()
+      foldAny (D ∷ [])     d a b  ns      (h , tt)  e       = foldExtend D h e
+      foldAny (D ∷ E ∷ Ds) d a b  ns      (h , hs) (inj₁ e) = foldExtend D h e
+      foldAny (D ∷ E ∷ Ds) d a b (_ , ns) (h , hs) (inj₂ r) = foldAny (E ∷ Ds) d a b ns hs r
 
-      uncurryFoldMono : ∀ {j} -> μ D₀ j -> C j
-      uncurryFoldMono (node e) =
-        foldAny (constructors D₀) (dataName D₀) (paramsType D₀) (indicesType D₀)(consNames D₀) hs e
+      foldMono : ∀ {j} -> μ D₀ j -> C j
+      foldMono (node e) = foldAny (constructors D₀)
+                                  (dataName     D₀)
+                                  (paramsType   D₀)
+                                  (indicesType  D₀)
+                                  (consNames    D₀)
+                                   hs
+                                   e
 
-  foldMono : ∀ {j} -> μ D₀ j -> CurryAll (Fold C) (constructors D₀) (C j)
-  foldMono d = curryAll λ hs -> uncurryFoldMono hs d
+  curryFoldMono : ∀ {j} -> μ D₀ j -> CurryAll (Fold C) (constructors D₀) (C j)
+  curryFoldMono d = curryAll λ hs -> foldMono hs d

@@ -55,7 +55,7 @@ macro
 
   uncoerce : ∀ {ι β} {I : Set ι} {D : Data I β} {j} -> μ D j -> Term -> TC _
   uncoerce {D = packData n a b Ds ns} d ?r =
-    quoteTC d >>= λ qd -> unify ?r ∘′ vis def (quote foldMono)
+    quoteTC d >>= λ qd -> unify ?r ∘′ vis def (quote curryFoldMono)
       $ euncurryBy b (vis def n (replicate (ecount a) unknown))
       ∷ qd
       ∷ map (λ n -> con n []) (allToList ns)

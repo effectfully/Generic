@@ -2,13 +2,13 @@ module Generic.Property.Reify where
 
 open import Generic.Core
 
-SemReify : ∀ {i β} {I : Set i} -> Cons I β -> Set
+SemReify : ∀ {i β} {I : Set i} -> Desc I β -> Set
 SemReify (var i)   = ⊤
 SemReify (π q v C) = ⊥
 SemReify (D ⊛ E)   = SemReify D × SemReify E
 
 mutual
-  ExtendReify : ∀ {i β} {I : Set i} -> Cons I β -> Set β
+  ExtendReify : ∀ {i β} {I : Set i} -> Desc I β -> Set β
   ExtendReify (var i)   = ⊤
   ExtendReify (π q v C) = ExtendReifyᵇ C q v
   ExtendReify (D ⊛ E)   = SemReify D × ExtendReify E
@@ -20,9 +20,9 @@ mutual
 
 instance
   {-# TERMINATING #-} -- Why?
-  DescReify : ∀ {i β} {I : Set i} {D : Desc I β} {j}
-                {{reD : All (ExtendReify ∘ proj₂) D}} -> Reify (μ D j)
-  DescReify {ι} {β = β} {I = I} {D = D₀} = record { reify = reifyMu } where
+  DataReify : ∀ {i β} {I : Set i} {D : Data I β} {j}
+                {{reD : All ExtendReify (constructors D)}} -> Reify (μ D j)
+  DataReify {ι} {β = β} {I = I} {D = D₀} = record { reify = reifyMu } where
     mutual
       reifySem : ∀ D {{reD : SemReify D}} -> ⟦ D ⟧ (μ D₀) -> Term
       reifySem (var i)                  d      = reifyMu d
@@ -46,16 +46,21 @@ instance
       reifyExtendᵇ (coerce (A , D)) q inst {{reC}} p =
         split q p λ x e -> reifyExtend (D x) {{uncoerce′ q reC}} e
 
-      reifyCons : ∀ {j} (C : Name × Cons I β) {{reC : ExtendReify (proj₂ C)}}
-                -> Extend (proj₂ C) (μ D₀) j -> Term
-      reifyCons (n , C) e = vis con n (reifyExtend C e)
+      reifyDesc : ∀ {j} D {{reD : ExtendReify D}} -> Name -> Extend D (μ D₀) j -> Term
+      reifyDesc D n e = vis con n (reifyExtend D e)
 
-      reifyAny : ∀ {j} (D : Desc I β) {{reD : All (ExtendReify ∘ proj₂) D}}
-               -> Node D₀ D j -> Term
-      reifyAny  []                         ()
-      reifyAny (C ∷ [])     {{reC , _}}    e       = reifyCons C {{reC}} e
-      reifyAny (C ∷ C′ ∷ D) {{reC , reD}} (inj₁ e) = reifyCons C {{reC}} e
-      reifyAny (C ∷ C′ ∷ D) {{reC , reD}} (inj₂ a) = reifyAny (C′ ∷ D) {{reD}} a
+      reifyAny : ∀ {j} (Ds : List (Desc I β)) {{reD : All ExtendReify Ds}}
+               -> ∀ d a b ns -> Node D₀ (packData d a b Ds ns) j -> Term
+      reifyAny  []                         d a b  tt       ()
+      reifyAny (D ∷ [])     {{reD , _}}    d a b (n , ns)  e       = reifyDesc D {{reD}} n e
+      reifyAny (D ∷ E ∷ Ds) {{reD , reDs}} d a b (n , ns) (inj₁ e) = reifyDesc D {{reD}} n e
+      reifyAny (D ∷ E ∷ Ds) {{reD , reDs}} d a b (n , ns) (inj₂ r) =
+        reifyAny (E ∷ Ds) {{reDs}} d a b ns r
 
       reifyMu : ∀ {j} -> μ D₀ j -> Term
-      reifyMu (node e) = reifyAny D₀ e
+      reifyMu (node e) = reifyAny (constructors D₀)
+                                  (dataName     D₀)
+                                  (paramsType   D₀)
+                                  (indicesType  D₀)
+                                  (consNames    D₀)
+                                   e
