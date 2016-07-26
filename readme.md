@@ -25,7 +25,7 @@ record Data {ι} (I : Set ι) β : Set (ι ⊔ lsuc β) where
 open Data public
 ```
 
-I.e. an encoded data typed is a list of named constructors. It also has a name and is packaged with the telescopes of types of parameters and indices.`Name` and `Type` come from the `Reflection` module. That `Coerce` stuff is elaborated in [Emulating cumulativity in Agda](http://effectfully.blogspot.ru/2016/07/cumu.html). Constructors are interpreted in the way described in [Descriptions](http://effectfully.blogspot.ru/2016/04/descriptions.html) (in the `CompProp` module).
+I.e. an encoded data typed is a list of named constructors. It also has a name and is packaged with the telescopes of types of parameters and indices. `Name` and `Type` come from the `Reflection` module. That `Coerce` stuff is elaborated in [Emulating cumulativity in Agda](http://effectfully.blogspot.ru/2016/07/cumu.html). Constructors are interpreted in the way described in [Descriptions](http://effectfully.blogspot.ru/2016/04/descriptions.html) (in the `CompProp` module).
 
 There is some reflection machinery that allows to parse actual Agda data types into their described counterparts. An example from the `/Generic/Examples/ReadData.agda` module:
 
@@ -51,7 +51,7 @@ outj (c₂′ r ys)   = c₂ (λ y -> outj (r y)) ys
 
 So universe polymorphism is fully supported, as well as implicit and instance arguments, multiple (including single or none) parameters and indices, higher-order inductive occurrences and you can define functions over described data types just like over the actual ones (though, [pattern synonyms are not equal in power to proper constructors](https://github.com/agda/agda/issues/2069)).
 
-There is a generic procedure that allows to coerce elements of described data type to elements of the correposponding actual data types, e.g. `outj` can be defined as
+There is a generic procedure that allows to coerce elements of described data type to elements of the corresponding actual data types, e.g. `outj` can be defined as
 
 ```
 outj : ∀ {α β} {A : Set α} {B : ℕ -> Set β} {n xs} {y : B n} -> D′ A B y xs -> D A B y xs
@@ -97,7 +97,7 @@ test = refl
 
 Equality for `Vec`s, `List`s and `Fin`s is derived automatically.
 
-The `/Generic/Property/Reify.agda` module implements coercion from described data types to `Term`s. Since stored names of described constructors are taken from actual constructors, reified elements of described data types are actually quoted elements of actual data types and hence the former can be converted to the latter (like with `uncoerce`, but deeply):
+The `/Generic/Property/Reify.agda` module implements coercion from described data types to `Term`s. Since stored names of described constructors are taken from actual constructors, reified elements of described data types are actually quoted elements of actual data types and hence the former can be converted to the latter (like with `uncoerce`, but deeply and accepts only normal forms):
 
 ```
 record Reify {α} (A : Set α) : Set α where
