@@ -41,12 +41,12 @@ instance
           _≟_ {{eqA}} x₁ x₂ <,>ᵈᵒ decExtend (D x₁) {{eqD}} e₁
 
       decAny : ∀ {j} (Ds : List (Desc I β)) {{eqD : All ExtendEq Ds}}
-             -> ∀ n p ns -> IsSet (Node D₀ (packData n p Ds ns) j)
-      decAny  []                         n p  ns      () ()
-      decAny (D ∷ [])     {{eqD , _}}    n p  ns      e₁ e₂ = decExtend D {{eqD}} e₁ e₂
-      decAny (D ∷ E ∷ Ds) {{eqD , eqDs}} n p (_ , ns) s₁ s₂ =
-        decSum (decExtend D {{eqD}}) (decAny (E ∷ Ds) {{eqDs}} n p ns) s₁ s₂
+             -> ∀ n a b ns -> IsSet (Node D₀ (packData n a b Ds ns) j)
+      decAny  []                         n a b  ns      () ()
+      decAny (D ∷ [])     {{eqD , _}}    n a b  ns      e₁ e₂ = decExtend D {{eqD}} e₁ e₂
+      decAny (D ∷ E ∷ Ds) {{eqD , eqDs}} n a b (_ , ns) s₁ s₂ =
+        decSum (decExtend D {{eqD}}) (decAny (E ∷ Ds) {{eqDs}} n a b ns) s₁ s₂
 
       decMu : ∀ {j} -> IsSet (μ D₀ j)
       decMu (node e₁) (node e₂) = dcong node node-inj $
-        decAny (constructors D₀) (dataName D₀) (dataParam D₀) (consNames D₀) e₁ e₂
+        decAny (constructors D₀) (dataName D₀) (paramsType D₀) (indicesType D₀) (consNames D₀) e₁ e₂

@@ -40,10 +40,9 @@ All : ∀ {α β} {A : Set α} -> (A -> Set β) -> List A -> Set β
 All B  []      = ⊤
 All B (x ∷ xs) = B x × All B xs
 
-foldr₁ : ∀ {α} {A : Set α} -> (A -> A -> A) -> A -> List A -> A
-foldr₁ f z  []          = z
-foldr₁ f z (x ∷ [])     = x
-foldr₁ f z (x ∷ y ∷ xs) = f x (foldr₁ f z (y ∷ xs))
+allToList : ∀ {α β} {A : Set α} {B : Set β} {xs : List A} -> All (const B) xs -> List B
+allToList {xs = []}      tt      = []
+allToList {xs = x ∷ xs} (y , ys) = y ∷ allToList ys
 
 ,-inj : ∀ {α β} {A : Set α} {B : A -> Set β} {x₁ x₂} {y₁ : B x₁} {y₂ : B x₂}
       -> (x₁ , y₁) ≡ (x₂ , y₂) -> [ B ] y₁ ≅ y₂

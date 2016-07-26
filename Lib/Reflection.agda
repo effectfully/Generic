@@ -18,6 +18,11 @@ open import Data.List.Base
 
 infixl 3 _·_
 
+foldr₁ : ∀ {α} {A : Set α} -> (A -> A -> A) -> A -> List A -> A
+foldr₁ f z  []          = z
+foldr₁ f z (x ∷ [])     = x
+foldr₁ f z (x ∷ y ∷ xs) = f x (foldr₁ f z (y ∷ xs))
+
 record Reify {α} (A : Set α) : Set α where
   field reify : A -> Term
 
@@ -49,6 +54,10 @@ vis₃ k f x₁ x₂ x₃ = vis k f (x₁ ∷ x₂ ∷ x₃ ∷ [])
 
 vis₄ : {A : Set} -> (A -> List (Arg Term) -> Term) -> A -> Term -> Term -> Term -> Term -> Term
 vis₄ k f x₁ x₂ x₃ x₄ = vis k f (x₁ ∷ x₂ ∷ x₃ ∷ x₄ ∷ [])
+
+vis₅ : {A : Set}
+     -> (A -> List (Arg Term) -> Term) -> A -> Term -> Term -> Term -> Term -> Term -> Term
+vis₅ k f x₁ x₂ x₃ x₄ x₅ = vis k f (x₁ ∷ x₂ ∷ x₃ ∷ x₄ ∷ x₅ ∷ [])
 
 elam : String -> Term -> Term
 elam s = rlam expl ∘ abs s
@@ -152,6 +161,9 @@ mutual
 shiftBy : ℕ -> Term -> Term
 shiftBy = ren ∘ _+_
 
+shift : Term -> Term
+shift = shiftBy 1
+
 takePi : ℕ -> Type -> Maybe Type
 takePi  0       a                = just unknown
 takePi (suc n) (rpi a (abs s b)) = rpi a ∘ abs s <$> takePi n b
@@ -162,10 +174,24 @@ dropPi  0       a                = just a
 dropPi (suc n) (rpi a (abs s b)) = dropPi n b
 dropPi  _       _                = nothing
 
-craftLams : Type -> Term -> Term
-craftLams (rpi (earg a ) (abs s b)) t = elam s (craftLams b t)
-craftLams (rpi  _        (abs s b)) t = craftLams b t
-craftLams  _                        t = t
+ecount : Type -> ℕ
+ecount (rpi (earg a) (abs s b)) = 1 + ecount b
+ecount (rpi  _       (abs s b)) = ecount b
+ecount  _                       = 0
+
+elamsBy : Type -> Term -> Term
+elamsBy (rpi (earg a) (abs s b)) t = elam s (elamsBy b t)
+elamsBy (rpi  _       (abs s b)) t = elamsBy b t
+elamsBy  _                       t = t
+
+euncurryBy : Type -> Term -> Term
+euncurryBy a f = elam "x" $ def (quote id) (earg (shift f) ∷ go a (rvar 0 [])) where
+  go : Term -> Term -> List (Arg Term)
+  go (rpi (earg a)    (abs s b@(rpi _ _))) p =
+    earg (vis₁ def (quote proj₁) p) ∷ go b (vis₁ def (quote proj₂) p)
+  go (rpi  _          (abs s b@(rpi _ _))) p = go b (vis₁ def (quote proj₂) p)
+  go (rpi (earg a) _)                      x = earg x ∷ []
+  go  _                                    t = []
 
 getData : Name -> TC (ℕ × List (Name × Type))
 getData = getDefinition >=> λ

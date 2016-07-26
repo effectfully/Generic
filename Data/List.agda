@@ -1,12 +1,12 @@
 module Generic.Data.List where
 
 module _ where
-  open import Generic.Main as Main hiding (List; []; _∷_)
+  open import Generic.Main as Main hiding ([]; _∷_) renaming (List to StdList)
 
   infixr 5 _∷_ _∷′_
 
   List : ∀ {α} -> Set α -> Set α
-  List = readData Main.List
+  List = readData StdList
 
   pattern []       = #₀ lrefl
   pattern _∷_ x xs = !#₁ (x , xs , lrefl)
@@ -22,6 +22,9 @@ module _ where
            -> P xs
   elimList P f z  []      = z
   elimList P f z (x ∷ xs) = f x (elimList P f z xs)
+
+  toStdList : ∀ {α} {A : Set α} -> List A -> StdList A
+  toStdList xs = uncoerce xs
 
 -- The entire content of `Data.List.Base` (modulo `Generic.Data.Maybe` instead of
 -- `Data.Maybe.Base` and _∷_ was renamed to _∷′_ in some places)

@@ -1,10 +1,10 @@
 module Generic.Examples.DeriveEq where
 
-open import Generic.Core
+open import Generic.Main
 open import Generic.Property.Eq
 open import Generic.Data.Vec
 
-open import Data.Vec as StdVec renaming (Vec to StdVec)
+open import Data.Vec as StdVec renaming (Vec to StdVec) hiding (map; _>>=_)
 
 VecInj : ∀ {n α} {A : Set α} -> StdVec A n ↦ Vec A n
 VecInj {A = A} = record { R } where
@@ -13,11 +13,11 @@ VecInj {A = A} = record { R } where
     to = StdVec.foldr (Vec _) _∷ᵥ_ []ᵥ
 
     from : ∀ {n} -> Vec A n -> StdVec A n
-    from = elimVec (λ {n} _ -> StdVec A n) _∷_ []
+    from xs = uncoerce xs
 
     from-to : ∀ {n} -> from ∘ to ≗ id {A = StdVec A n}
     from-to  []      = refl
-    from-to (x ∷ xs) = cong (x ∷_) (from-to xs)
+    from-to (x ∷ xs) = cong (_ ∷_) (from-to xs)
 
 module _ where
   private open module Dummy {n α A} = _↦_ (VecInj {n} {α} {A})

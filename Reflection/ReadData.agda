@@ -1,15 +1,16 @@
 module Generic.Reflection.ReadData where
 
 open import Generic.Core
+open import Generic.Function.FoldUp
 
 open import Data.Unit.Base
 open import Data.Maybe.Base hiding (map)
 
 pack₀ : List Term -> Term
-pack₀ = foldr  (vis₂ con (quote _,_)) (vis₀ def (quote tt₀))
+pack₀ = foldr  (vis₂ con (quote _,_)) (def (quote tt₀) [])
 
 pack₁ : List Term -> Term
-pack₁ = foldr₁ (vis₂ con (quote _,_)) (vis₀ def (quote tt₀))
+pack₁ = foldr₁ (vis₂ con (quote _,_)) (def (quote tt₀) [])
 
 curryBy : Type -> Term -> Term
 curryBy = go 0 where
@@ -43,10 +44,18 @@ quoteData d =
   getType d >>= λ ab ->
     case takePi p ab ⊗ (dropPi p ab ⊗ mapM (dropPi p >=> quoteDesc d p) (map proj₂ nas)) of λ
       {  nothing            -> typeError (strErr "can't read a non-strictly positive data type" ∷ [])
-      ; (just (a , b , cs)) -> return ∘′ craftLams a ∘′ curryBy b ∘′ vis₁ def (quote μ) $
-          vis₄ con (quote packData) (reify d) (reify p) (reify cs) (pack₀ (map (reify ∘ proj₁) nas))
+      ; (just (a , b , cs)) -> (λ qa qb -> elamsBy a ∘′ curryBy b ∘′ vis₁ def (quote μ) $
+             vis₅ con (quote packData) (reify d) qa qb (reify cs) (pack₀ (map (reify ∘ proj₁) nas)))
+           <$> quoteTC a <*> quoteTC b
       }
 
 macro
   readData : Name -> Term -> TC _
   readData d ?r = quoteData d >>= unify ?r
+
+  uncoerce : ∀ {ι β} {I : Set ι} {D : Data I β} {j} -> μ D j -> Term -> TC _
+  uncoerce {D = packData n a b Ds ns} d ?r =
+    quoteTC d >>= λ qd -> unify ?r ∘′ vis def (quote foldMono)
+      $ euncurryBy b (vis def n (replicate (ecount a) unknown))
+      ∷ qd
+      ∷ map (λ n -> con n []) (allToList ns)

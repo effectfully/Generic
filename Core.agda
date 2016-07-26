@@ -103,7 +103,8 @@ record Data {ι} (I : Set ι) β : Set (ι ⊔ lsuc β) where
   constructor packData
   field
     dataName     : Name
-    dataParam    : ℕ
+    paramsType   : Type
+    indicesType  : Type
     constructors : List (Desc I β)
     consNames    : All (λ _ -> Name) constructors
 open Data public
