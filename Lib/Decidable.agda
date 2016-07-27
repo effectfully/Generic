@@ -96,7 +96,22 @@ dhcong₂ : ∀ {α β γ} {A : Set α} {B : A -> Set β} {C : Set γ} {x₁ x�
         -> (∀ y₂ -> y₁ # y₂)
         -> f x₁ y₁ # f x₂ y₂
 dhcong₂ f inj (yes refl) q = dcong (f _) (homo ∘ inj) (q _)
-dhcong₂ f inj (no c)     q = no (c ∘ inds ∘ inj)
+dhcong₂ f inj (no  c)    q = no (c ∘ inds ∘ inj)
+
+dsubst : ∀ {α β γ} {A : Set α} {x y}
+       -> (B : A -> Set β)
+       -> (C : ∀ {x} -> B x -> Set γ)
+       -> x # y
+       -> (z : B x)
+       -> ((z : B y) -> C z)
+       -> (x ≢ y -> C z)
+       -> C z
+dsubst B C (yes refl) z g h = g z
+dsubst B C (no  c)    z g h = h c
+
+dsubst′ : ∀ {α β γ} {A : Set α} {C : Set γ} {x y}
+        -> (B : A -> Set β) -> x # y -> B x -> (B y -> C) -> (x ≢ y -> C) -> C
+dsubst′ B = dsubst B _
 
 module _ where
   import Relation.Binary.PropositionalEquality as B

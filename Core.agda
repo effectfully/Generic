@@ -117,6 +117,31 @@ module _ {ι β} {I : Set ι} (D : Data I β) where
     Node : Data I β -> I -> Set β
     Node D j = Any (λ C -> Extend C μ j) (constructors D)
 
+mutual
+  Cons : ∀ {ι β} {I : Set ι} -> (I -> Set β) -> Desc I β -> Set β
+  Cons B (var i)   = B i
+  Cons B (π q v C) = Consᵇ B C q v
+  Cons B (D ⊛ E)   = ⟦ D ⟧ B -> Cons B E
+
+  Consᵇ : ∀ {ι α β γ q} {I : Set ι}
+        -> (I -> Set β) -> Binder α β γ q I -> α ≤ℓ β -> Visibility -> Set β
+  Consᵇ B (coerce (A , D)) q v = Coerce′ q $ Pi v A λ x -> Cons B (D x)
+
+cons : ∀ {ι β} {I : Set ι} {D} -> (D₀ : Data I β) -> D ∈ constructors D₀ -> Cons (μ D₀) D
+cons {D = D} D₀ p = go D λ e ->
+  node (mapAny (constructors D₀) (λ q -> subst (λ E -> Extend E _ _) q e) p) where
+    mutual
+      go : ∀ {ι β} {I : Set ι} {B : I -> Set β}
+        -> (D : Desc I β) -> (∀ {j} -> Extend D B j -> B j) -> Cons B D
+      go (var i)   k = k lrefl
+      go (π q v C) k = goᵇ C k
+      go (D ⊛ E)   k = λ x -> go E (k ∘ _,_ x)
+
+      goᵇ : ∀ {ι α β γ q q′ v} {I : Set ι} {B : I -> Set β}
+          -> (C : Binder α β γ q′ I) -> (∀ {j} -> Extendᵇ C q B j -> B j) -> Consᵇ B C q v
+      goᵇ {q = q} {v = v} (coerce (A , D)) k =
+        coerce′ q $ lam v λ x -> go (D x) (k ∘ coerce′ q ∘ _,_ x)
+
 node-inj : ∀ {i β} {I : Set i} {D : Data I β} {j} {e₁ e₂ : Node D D j}
          -> node {D = D} e₁ ≡ node e₂ -> e₁ ≡ e₂
 node-inj refl = refl

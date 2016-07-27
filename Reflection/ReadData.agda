@@ -58,6 +58,9 @@ quoteData d =
            <$> quoteTC a <*> quoteTC b
       }
 
+no-way : ∀ {α} {A : Set α} -> TC A
+no-way = typeError (strErr "no way" ∷ [])
+
 macro
   readData : Name -> Term -> TC _
   readData d ?r = quoteData d >>= unify ?r
@@ -68,3 +71,17 @@ macro
       $ euncurryBy b (vis def n (replicate (ecount a) unknown))
       ∷ qd
       ∷ map (λ n -> con n []) (allToList ns)
+
+  readCons : Name -> Term -> TC _
+  readCons c ?r = inferType ?r >>= resType >>> normalise >>= λ
+    { (def (quote μ) as) -> case explOnly as of λ
+         { (D₀@(con (quote packData) xs) ∷ _) -> case explOnly xs of λ
+              { (_ ∷ _ ∷ _ ∷ Ds ∷ cs ∷ []) ->
+                   unify ?r ∘′ vis₂ def (quote cons) D₀ ∘′ vis₁ def (quote proj₂)
+                     ∘′ vis₁ def (quote from-just) $ vis₂ def (quote lookupAllConst) (reify c) cs
+              ;  _                         -> no-way
+              }
+         ;  _                                 -> no-way
+         }
+    ;  _                 -> typeError (strErr "can't read a constructor" ∷ [])
+    }

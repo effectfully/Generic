@@ -132,6 +132,16 @@ instance
 unshift : Term -> Term
 unshift t = elam "_" t · quoteTerm tt
 
+explOnly : List (Arg Term) -> List Term
+explOnly  []           = []
+explOnly (earg x ∷ xs) = x ∷ explOnly xs
+explOnly (_      ∷ xs) = explOnly xs
+
+-- Returns an unnormalized type.
+resType : Type -> Type
+resType (rpi a (abs s b)) = unshift (resType b)
+resType  a                = a
+
 keep : (ℕ -> ℕ) -> ℕ -> ℕ
 keep ι  0      = 0
 keep ι (suc n) = suc (ι n)

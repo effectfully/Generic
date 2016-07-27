@@ -15,7 +15,10 @@ open import Data.Sum renaming (map to smap) public
 open import Data.Product renaming (map to pmap; zip to pzip) hiding (_,′_) public
 open import Data.List.Base public
 
-infixl 1 _>>>_
+open import Data.Maybe.Base using (Maybe; just; nothing)
+
+infix  3 _∈_
+infixl 2 _>>>_
 
 data ⊥ {α} : Set α where
 record ⊤ {α} : Set α where
@@ -31,10 +34,39 @@ _>>>_ : ∀ {α β γ} {A : Set α} {B : A -> Set β} {C : ∀ {x} -> B x -> Set
       -> (f : ∀ x -> B x) -> (∀ {x} -> (y : B x) -> C y) -> ∀ x -> C (f x)
 (f >>> g) x = g (f x)
 
+first : ∀ {α β γ} {A : Set α} {B : Set β} {C : A -> Set γ}
+      -> (∀ x -> C x) -> (p : A × B) -> C (proj₁ p) × B
+first f (x , y) = f x , y
+
+second : ∀ {α β γ} {A : Set α} {B : A -> Set β} {C : A -> Set γ}
+       -> (∀ {x} -> B x -> C x) -> Σ A B -> Σ A C
+second g (x , y) = x , g y
+
 Any : ∀ {α β} {A : Set α} -> (A -> Set β) -> List A -> Set β
 Any B  []      = ⊥
 Any B (x ∷ []) = B x
 Any B (x ∷ xs) = B x ⊎ Any B xs
+
+_∈_ : ∀ {α} {A : Set α} -> A -> List A -> Set
+x ∈ xs = Any (x ≡_) xs
+
+here : ∀ {α β} {A : Set α} {B : A -> Set β} {x} xs -> B x -> Any B (x ∷ xs)
+here  []      y = y
+here (x ∷ xs) y = inj₁ y
+
+phere : ∀ {α} {A : Set α} {x : A} xs -> x ∈ x ∷ xs
+phere xs = here xs refl
+
+there : ∀ {α β} {A : Set α} {B : A -> Set β} {x} xs -> Any B xs -> Any B (x ∷ xs)
+there  []      ()
+there (x ∷ xs) a  = inj₂ a
+
+mapAny : ∀ {α β γ} {A : Set α} {B : A -> Set β} {C : A -> Set γ}
+       -> ∀ xs -> (∀ {x} -> B x -> C x) -> Any B xs -> Any C xs
+mapAny  []           g  ()
+mapAny (x ∷ [])      g  y       = g y
+mapAny (x ∷ x′ ∷ xs) g (inj₁ y) = inj₁ (g y)
+mapAny (x ∷ x′ ∷ xs) g (inj₂ r) = inj₂ (mapAny (x′ ∷ xs) g r)
 
 All : ∀ {α β} {A : Set α} -> (A -> Set β) -> List A -> Set β
 All B  []      = ⊤
@@ -43,6 +75,13 @@ All B (x ∷ xs) = B x × All B xs
 allToList : ∀ {α β} {A : Set α} {B : Set β} {xs : List A} -> All (const B) xs -> List B
 allToList {xs = []}      tt      = []
 allToList {xs = x ∷ xs} (y , ys) = y ∷ allToList ys
+
+lookupAllConst : ∀ {α β} {A : Set α} {B : Set β} {{bEq : Eq B}} {xs : List A}
+               -> B -> All (const B) xs -> Maybe (∃ (_∈ xs))
+lookupAllConst {xs = []}     y  tt      = nothing
+lookupAllConst {xs = x ∷ xs} y (z , ys) = if y == z
+  then just (, phere xs)
+  else second (there xs) <$> lookupAllConst y ys
 
 ,-inj : ∀ {α β} {A : Set α} {B : A -> Set β} {x₁ x₂} {y₁ : B x₁} {y₂ : B x₂}
       -> (x₁ , y₁) ≡ (x₂ , y₂) -> [ B ] y₁ ≅ y₂

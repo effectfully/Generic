@@ -25,7 +25,7 @@ record Data {ι} (I : Set ι) β : Set (ι ⊔ lsuc β) where
 open Data public
 ```
 
-I.e. an encoded data typed is a list of named constructors. It also has a name and is packaged with the telescopes of types of parameters and indices. `Name` and `Type` come from the `Reflection` module. That `Coerce` stuff is elaborated in [Emulating cumulativity in Agda](http://effectfully.blogspot.ru/2016/07/cumu.html). Constructors are interpreted in the way described in [Descriptions](http://effectfully.blogspot.ru/2016/04/descriptions.html) (in the `CompProp` module).
+I.e. an encoded data typed is a list of named constructors. It also has a name and is packaged with telescopes of types of parameters and indices. `Name` and `Type` come from the `Reflection` module. That `Coerce` stuff is elaborated in [Emulating cumulativity in Agda](http://effectfully.blogspot.ru/2016/07/cumu.html). Constructors are interpreted in the way described in [Descriptions](http://effectfully.blogspot.ru/2016/04/descriptions.html) (in the `CompProp` module).
 
 There is some reflection machinery that allows to parse actual Agda data types into their described counterparts. An example from the `/Generic/Examples/ReadData.agda` module:
 

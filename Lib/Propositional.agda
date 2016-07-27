@@ -2,13 +2,17 @@ module Generic.Lib.Propositional where
 
 open import Level
 open import Relation.Binary
+open import Data.Empty
 
-infix 3 _≡_ _≗_
+infix 3 _≡_ _≢_ _≗_
 
 data _≡_ {α} {A : Set α} (x : A) : A -> Set where
   instance refl : x ≡ x
 
 pattern lrefl = lift refl
+
+_≢_ : ∀ {α} {A : Set α} -> A -> A -> Set
+x ≢ y = x ≡ y -> ⊥
 
 _≗_ : ∀ {α β} {A : Set α} {B : A -> Set β} -> (∀ x -> B x) -> (∀ x -> B x) -> Set α
 f ≗ g = ∀ x -> f x ≡ g x
