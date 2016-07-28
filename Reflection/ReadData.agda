@@ -43,7 +43,7 @@ quoteHyp d p t                                        = just nothing
 
 quoteDesc : Name -> ℕ -> Type -> Maybe Term
 quoteDesc d p (rpi (arg (arg-info v _) a) (abs s b)) =
-  (λ ma' b' -> maybe (λ a' -> vis₂ con (quote _⊛_) a' (unshift b')) (qπ v s a b') ma')
+  (λ ma' b' -> maybe (λ a' -> vis₂ con (quote _⊛_) a' (unshift′ b')) (qπ v s a b') ma')
     <$> quoteHyp d p a <*> quoteDesc d p b
 quoteDesc d p  t                                     = join $ quoteHyp d p t
 
@@ -73,7 +73,7 @@ macro
       ∷ map (λ n -> con n []) (allToList ns)
 
   readCons : Name -> Term -> TC _
-  readCons c ?r = inferType ?r >>= resType >>> normalise >>= λ
+  readCons c ?r = inferType ?r >>= resType >>> λ
     { (def (quote μ) as) -> case explOnly as of λ
          { (D₀@(con (quote packData) xs) ∷ _) -> case explOnly xs of λ
               { (_ ∷ _ ∷ _ ∷ Ds ∷ cs ∷ []) ->

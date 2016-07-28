@@ -129,18 +129,10 @@ instance
   TCFunctor : ∀ {α} -> RawFunctor {α} TC
   TCFunctor = rawFunctor
 
-unshift : Term -> Term
-unshift t = elam "_" t · quoteTerm tt
-
 explOnly : List (Arg Term) -> List Term
 explOnly  []           = []
 explOnly (earg x ∷ xs) = x ∷ explOnly xs
 explOnly (_      ∷ xs) = explOnly xs
-
--- Returns an unnormalized type.
-resType : Type -> Type
-resType (rpi a (abs s b)) = unshift (resType b)
-resType  a                = a
 
 keep : (ℕ -> ℕ) -> ℕ -> ℕ
 keep ι  0      = 0
@@ -174,6 +166,12 @@ shiftBy = ren ∘ _+_
 shift : Term -> Term
 shift = shiftBy 1
 
+unshiftBy : ℕ -> Term -> Term
+unshiftBy n = ren (_∸ n)
+
+unshift′ : Term -> Term
+unshift′ t = elam "_" t · quoteTerm tt
+
 takePi : ℕ -> Type -> Maybe Type
 takePi  0       a                = just unknown
 takePi (suc n) (rpi a (abs s b)) = rpi a ∘ abs s <$> takePi n b
@@ -193,6 +191,12 @@ elamsBy : Type -> Term -> Term
 elamsBy (rpi (earg a) (abs s b)) t = elam s (elamsBy b t)
 elamsBy (rpi  _       (abs s b)) t = elamsBy b t
 elamsBy  _                       t = t
+
+resType : Type -> Type
+resType = go 0 where
+  go : ℕ -> Type -> Type
+  go n (rpi a (abs s b)) = go (suc n) b
+  go n  a                = unshiftBy n a
 
 getData : Name -> TC (ℕ × List (Name × Type))
 getData = getDefinition >=> λ
