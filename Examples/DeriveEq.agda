@@ -53,7 +53,7 @@ module DeriveEqD where
     c₂ : ∀ {x n m y} {ys zs : Vec (B x) n}
        -> D A B (y ∷ᵥ ys) 0 -> D A B ys (suc n) -> Vec A m -> D A B zs n
 
-  module _ where
+  private
     D′ : ∀ {α β} (A : Set α) (B : A -> Set β) {n x} -> Vec (B x) n -> ℕ -> Set (α ⊔ β)
     D′ = readData D
 
@@ -79,9 +79,8 @@ module DeriveEqD where
           from-to (c₁ ys m x) = refl
           from-to (c₂ d e xs) = cong₂ (λ d e -> c₂ d e xs) (from-to d) (from-to e)
 
-    -- `VecEq` is in scope.
-    instance
-      DEq : ∀ {α β} {A : Set α} {B : A -> Set β} {n m x} {ys : Vec (B x) n}
-              {{aEq : Eq A}} {{bEq : ∀ {x} -> Eq (B x)}}
-          -> Eq (D A B ys m)
-      DEq = viaInj DInj
+  -- `VecEq` is in scope.
+  instance
+    DEq : ∀ {α β} {A : Set α} {B : A -> Set β} {n m x} {ys : Vec (B x) n}
+            {{aEq : Eq A}} {{bEq : ∀ {x} -> Eq (B x)}} -> Eq (D A B ys m)
+    DEq = viaInj DInj

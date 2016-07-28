@@ -61,6 +61,12 @@ quoteData d =
 no-way : ∀ {α} {A : Set α} -> TC A
 no-way = typeError (strErr "no way" ∷ [])
 
+-- This doesn't work, because `quoteData` doesn't generate implicit lambdas,
+-- because otherwise nothing would work due to the #2118 issue.
+readDataTo : Name -> Name -> TC _
+readDataTo d′ d = getType d >>= declareDef (earg d′)
+               >> quoteData d >>= λ qd -> defineFun d′ (clause [] qd ∷ [])
+
 macro
   readData : Name -> Term -> TC _
   readData d ?r = quoteData d >>= unify ?r
