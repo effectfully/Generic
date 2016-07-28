@@ -48,10 +48,6 @@ module DeriveEqVec where
                      $ elim (P ∘ from) (lift z , λ x r -> lift (f x r)) (to xs)
 
 module DeriveEqD where
-  open import Data.Nat.Base hiding (_⊔_; _≟_)
-  open import Data.Fin
-  open import Data.Unit.Base renaming (⊤ to Unit) 
-
   data D {α β} (A : Set α) (B : A -> Set β) : ∀ {n x} -> Vec (B x) n -> ℕ -> Set (α ⊔ β) where
     c₁ : ∀ {x n} (ys : Vec (B x) n) m -> A -> D A B ys m
     c₂ : ∀ {x n m y} {ys zs : Vec (B x) n}
