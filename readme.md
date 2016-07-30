@@ -65,20 +65,49 @@ Internally it's a bit of reflection sugar on top of a generic fold defined on de
 ```
 λ {α} {β} A B {n} z z₁ →
   μ
-  ((quote c₁ ,
-    ipi ℕ
+  (packData
+  -- dataName
+  (quote D)
+  -- paramsType
+   (rpi (iarg (def (quote Level) []))
+    (abs "α"
+     (rpi (iarg (def (quote Level) []))
+      (abs "β"
+       (rpi (earg (sort (set (rvar 1 []))))
+        (abs "A"
+         (rpi
+          (earg
+           (rpi (earg (def (quote ℕ) [])) (abs "_" (sort (set (rvar 2 []))))))
+          (abs "B" unknown))))))))
+  -- indicesType
+   (rpi (iarg (def (quote ℕ) []))
+    (abs "n"
+     (rpi (earg (rvar 1 (earg (rvar 0 []) ∷ [])))
+      (abs "_"
+       (rpi
+        (earg
+         (def (quote List)
+          (iarg (def (quote lzero) []) ∷ earg (def (quote ℕ) []) ∷ [])))
+        (abs "_"
+         (sort
+          (set
+           (def (quote _⊔_)
+            (earg (rvar 5 []) ∷ earg (rvar 6 []) ∷ []))))))))))
+  -- constructors 
+   (ipi ℕ
     (λ n₁ →
        pi (B n₁)
-       (λ y → pi (List ℕ) (λ xs → pi A (λ z₂ → var (n₁ , y , xs))))))
-   ∷
-   (quote c₂ ,
+       (λ y → pi (List ℕ) (λ xs → pi A (λ z₂ → var (n₁ , y , xs)))))
+    ∷
     ipi (B 0)
     (λ y →
        ipi ℕ
        (λ n₁ →
           pi (B n₁) (λ y₁ → iipi (List ℕ) (λ xs → var (n₁ , y₁ , xs))))
-       ⊛ pi (List A) (λ z₂ → var (0 , y , []))))
-   ∷ [])
+       ⊛ pi (List A) (λ z₂ → var (0 , y , [])))
+    ∷ [])
+  -- consNames  
+   (quote c₁ , quote c₂ , tt))
   (n , z , z₁)
 ```
 
