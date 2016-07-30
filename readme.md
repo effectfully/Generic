@@ -27,7 +27,7 @@ open Data public
 
 I.e. an encoded data typed is a list of named constructors. It also has a name and is packaged with telescopes of types of parameters and indices. `Name` and `Type` come from the `Reflection` module. That `Coerce` stuff is elaborated in [Emulating cumulativity in Agda](http://effectfully.blogspot.ru/2016/07/cumu.html). Constructors are interpreted in the way described in [Descriptions](http://effectfully.blogspot.ru/2016/04/descriptions.html) (in the `CompProp` module).
 
-There is some reflection machinery that allows to parse actual Agda data types into their described counterparts. An example from the `/Generic/Examples/ReadData.agda` module:
+There is some reflection machinery that allows to parse regular Agda data types into their described counterparts. An example from the [`Examples/ReadData.agda`](Examples/ReadData.agda) module:
 
 ```
 data D {α β} (A : Set α) (B : ℕ -> Set β) : ∀ {n} -> B n -> List ℕ -> Set (α ⊔ β) where
@@ -51,14 +51,14 @@ outj (c₂′ r ys)   = c₂ (λ y -> outj (r y)) ys
 
 So universe polymorphism is fully supported, as well as implicit and instance arguments, multiple (including single or none) parameters and indices, higher-order inductive occurrences and you can define functions over described data types just like over the actual ones (though, [pattern synonyms are not equal in power to proper constructors](https://github.com/agda/agda/issues/2069)).
 
-There is a generic procedure that allows to coerce elements of described data type to elements of the corresponding actual data types, e.g. `outj` can be defined as
+There is a generic procedure that allows to coerce elements of described data type to elements of the corresponding regular data types, e.g. `outj` can be defined as
 
 ```
 outj : ∀ {α β} {A : Set α} {B : ℕ -> Set β} {n xs} {y : B n} -> D′ A B y xs -> D A B y xs
 outj d = uncoerce d
 ```
 
-Internally it's a bit of reflection sugar on top of a generic fold defined on described data types (the `/Generic/Function/FoldMono.agda` module).
+Internally it's a bit of reflection sugar on top of a generic fold defined on described data types (the [`Function/FoldMono.agda`](Function/FoldMono.agda) module).
 
 `D′` computes to the following term:
 
@@ -82,7 +82,7 @@ Internally it's a bit of reflection sugar on top of a generic fold defined on de
   (n , z , z₁)
 ```
 
-Actual generic programming happens in the `/Generic/Property` subfolder. There is generic decidable equality defined over described data types. It can be used like this:
+Actual generic programming happens in the [`Property`](Property) subfolder. There is generic decidable equality defined over described data types. It can be used like this:
 
 ```
 xs : Vec (List (Fin 4)) 3
@@ -97,7 +97,7 @@ test = refl
 
 Equality for `Vec`s, `List`s and `Fin`s is derived automatically.
 
-The `/Generic/Property/Reify.agda` module implements coercion from described data types to `Term`s. Since stored names of described constructors are taken from actual constructors, reified elements of described data types are actually quoted elements of actual data types and hence the former can be converted to the latter (like with `uncoerce`, but deeply and accepts only normal forms):
+The [`Property/Reify.agda`](Property/Reify.agda) module implements coercion from described data types to `Term`s. Since stored names of described constructors are taken from actual constructors, reified elements of described data types are actually quoted elements of regular data types and hence the former can be converted to the latter (like with `uncoerce`, but deeply and accepts only normal forms):
 
 ```
 record Reify {α} (A : Set α) : Set α where
@@ -129,6 +129,8 @@ test : reflect xs ≡ xs′
 test = refl
 ```
 
-There are also generic `elim` in `/Generic/Function/Elim.agda` (the idea is described in [Deriving eliminators of described data types](http://effectfully.blogspot.ru/2016/06/deriving-eliminators-of-described-data.html) and `lookup` in `/Generic/Function/Lookup.agda` (broken currently).
+There are also generic `elim` in [`Function/Elim.agda`](Function/Elim.agda) (the idea is described in [Deriving eliminators of described data types](http://effectfully.blogspot.ru/2016/06/deriving-eliminators-of-described-data.html) and `lookup` in [`Function/Lookup.agda`](Function/Lookup.agda) (broken currently).
 
-The plan is to define decidable equality over actual data types using reflection and the current decidable equality over described data types. Ornaments may or may not appear later.
+The plan is to define decidable equality over regular data types using reflection and the current decidable equality over described data types. There is a problem however: it's hard to derive eliminators for regular data types: I can't handle implicits properly (see e.g. [this](https://github.com/agda/agda/issues/2118) issue). Currently, a data type and its constructors can be read automatically as well as coercion from a described data type to its regular counterpart, but automatic coercion in the other direction is missing, because of the mentioned issue with implicits (which also doesn't allow to derive data types via `unquoteDecl`). And we also need a proof that the latter coercion is an injection to get decidable equality. So deriving equality is quite verbose now, see the [`Examples/DeriveEq.agda`](Examples/DeriveEq.agda) module for two examples.
+
+Ornaments may or may not appear later (a model can be found [here](https://github.com/effectfully/random-stuff/blob/master/Desc/ParamOrn.agda)).
