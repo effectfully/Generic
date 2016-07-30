@@ -1,5 +1,3 @@
--- Under reconstruction.
-
 module Generic.Function.Elim where
 
 open import Generic.Core
