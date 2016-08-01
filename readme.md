@@ -126,7 +126,7 @@ test = refl
 
 Equality for `Vec`s, `List`s and `Fin`s is derived automatically.
 
-The [`Property/Reify.agda`](Property/Reify.agda) module implements coercion from described data types to `Term`s. Since stored names of described constructors are taken from actual constructors, reified elements of described data types are actually quoted elements of regular data types and hence the former can be converted to the latter (like with `uncoerce`, but deeply and accepts only normal forms):
+The [`Property/Reify.agda`](Property/Reify.agda) module implements coercion from described data types to `Term`s. Since stored names of described constructors are taken from actual constructors, reified elements of described data types are actually quoted elements of regular data types and hence the former can be converted to the latter (like with `uncoerce`, but deeply and accepts only canonical forms):
 
 ```
 record Reify {α} (A : Set α) : Set α where
@@ -162,4 +162,4 @@ There are also generic `elim` in [`Function/Elim.agda`](Function/Elim.agda) (the
 
 The plan is to define decidable equality over regular data types using reflection and the current decidable equality over described data types. There is a problem however: it's hard to derive eliminators for regular data types (I can't handle implicits properly, see e.g. [this](https://github.com/agda/agda/issues/2118) issue). Currently, a data type and its constructors can be read automatically as well as coercion from a described data type to its regular counterpart, but automatic coercion in the other direction is missing, because of the mentioned issue with implicits (which also doesn't allow to derive data types via `unquoteDecl`). And we also need a proof that the latter coercion is an injection to get decidable equality. So deriving equality is quite verbose now, see the [`Examples/DeriveEq.agda`](Examples/DeriveEq.agda) module for two examples.
 
-Ornaments may or may not appear later (a model can be found [here](https://github.com/effectfully/random-stuff/blob/master/Desc/ParamOrn.agda)).
+Ornaments may or may not appear later (in a way described in [Unbiased ornaments](http://effectfully.blogspot.com/2016/07/unbiased-ornaments.html)).
