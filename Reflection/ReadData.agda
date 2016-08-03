@@ -3,9 +3,6 @@ module Generic.Reflection.ReadData where
 open import Generic.Core
 open import Generic.Function.FoldMono
 
-open import Data.Unit.Base
-open import Data.Maybe.Base hiding (map)
-
 pack₀ : List Term -> Term
 pack₀ = foldr  (vis₂ con (quote _,_)) (def (quote tt₀) [])
 
@@ -49,17 +46,17 @@ quoteDesc d p  t                                     = join $ quoteHyp d p t
 
 quoteData : Name -> TC Term
 quoteData d =
-  getData d >>= uncurry λ p nas ->
-  getType d >>= λ ab ->
-    case takePi p ab ⊗ (dropPi p ab ⊗ mapM (dropPi p >=> quoteDesc d p) (map proj₂ nas)) of λ
-      {  nothing            -> typeError (strErr "can't read a non-strictly positive data type" ∷ [])
-      ; (just (a , b , cs)) -> (λ qa qb -> elamsBy a ∘′ curryBy b ∘′ vis₁ def (quote μ) $
-             vis₅ con (quote packData) (reify d) qa qb (reify cs) (pack₀ (map (reify ∘ proj₁) nas)))
-           <$> quoteTC a <*> quoteTC b
+  getData d >>= λ{ (packData _ pt it cs ns) ->
+    case mapM (quoteDesc d (countPi pt)) cs of λ
+      {  nothing   -> throw "can't read a data type"
+      ; (just cs′) -> (λ qpt qit -> elamsBy pt ∘′ curryBy it ∘′ vis₁ def (quote μ) $
+             vis₅ con (quote packData) (reify d) qpt qit (reify cs′) (reify ns))
+           <$> quoteTC pt <*> quoteTC it
       }
+   }
 
-no-way : ∀ {α} {A : Set α} -> TC A
-no-way = typeError (strErr "no way" ∷ [])
+panic : ∀ {α} {A : Set α} -> TC A
+panic = throw "panic: something happened"
 
 -- This doesn't work, because `quoteData` doesn't generate implicit lambdas,
 -- because otherwise nothing would work due to the #2118 issue.
@@ -71,10 +68,10 @@ macro
   readData : Name -> Term -> TC _
   readData d ?r = quoteData d >>= unify ?r
 
-  uncoerce : ∀ {ι β} {I : Set ι} {D : Data I β} {j} -> μ D j -> Term -> TC _
+  uncoerce : ∀ {ι β} {I : Set ι} {D : Data (Desc I β)} {j} -> μ D j -> Term -> TC _
   uncoerce {D = packData n a b Ds ns} d ?r =
     quoteTC d >>= λ qd -> unify ?r ∘′ vis def (quote curryFoldMono)
-      $ euncurryBy b (vis def n (replicate (ecount a) unknown))
+      $ euncurryBy b (vis def n (replicate (countEPi a) unknown))
       ∷ qd
       ∷ map (λ n -> con n []) (allToList ns)
 
@@ -85,9 +82,9 @@ macro
               { (_ ∷ _ ∷ _ ∷ Ds ∷ cs ∷ []) ->
                    unify ?r ∘′ vis₂ def (quote cons) D₀ ∘′ vis₁ def (quote proj₂)
                      ∘′ vis₁ def (quote from-just) $ vis₂ def (quote lookupAllConst) (reify c) cs
-              ;  _                         -> no-way
+              ;  _                         -> panic
               }
-         ;  _                                 -> no-way
+         ;  _                                 -> panic
          }
-    ;  _                 -> typeError (strErr "can't read a constructor" ∷ [])
+    ;  _                 -> throw "can't read"
     }

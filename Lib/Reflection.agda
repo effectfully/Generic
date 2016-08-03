@@ -5,23 +5,14 @@ open import Reflection
     relevant to rel; irrelevant to irr; pi to rpi; lam to rlam; var to rvar)
   hiding (_≟_) public
 
-open import Generic.Lib.Category
+open import Generic.Lib.Intro
 open import Generic.Lib.Decidable
-
-open import Function
-open import Data.Unit.Base
-open import Data.Nat.Base
-open import Data.String.Base
-open import Data.Maybe.Base hiding (map)
-open import Data.Product hiding (map)
-open import Data.List.Base
+open import Generic.Lib.Category
+open import Generic.Lib.Nat
+open import Generic.Lib.Maybe
+open import Generic.Lib.List
 
 infixl 3 _·_
-
-foldr₁ : ∀ {α} {A : Set α} -> (A -> A -> A) -> A -> List A -> A
-foldr₁ f z  []          = z
-foldr₁ f z (x ∷ [])     = x
-foldr₁ f z (x ∷ y ∷ xs) = f x (foldr₁ f z (y ∷ xs))
 
 record Reify {α} (A : Set α) : Set α where
   field reify : A -> Term
@@ -68,6 +59,17 @@ f · x = vis₂ def (quote id) f x
 unarg : ∀ {A} -> Arg A -> A
 unarg (arg _ x) = x
 
+record Data {α} (A : Set α) : Set α where
+  no-eta-equality
+  constructor packData
+  field
+    dataName  : Name
+    parsTele  : Type
+    indsTele  : Type
+    consTypes : List A
+    consNames : All (const Name) consTypes
+open Data public
+
 instance
   NameEq : Eq Name
   NameEq = viaBase _≟-Name_
@@ -107,6 +109,15 @@ instance
     { reify = foldr (vis₂ con (quote _∷_) ∘ reify) (quoteTerm (List Term ∋ []))
     }  
 
+  AllReify : ∀ {α β} {A : Set α} {B : A -> Set β} {xs} {{bReify : ∀ {x} -> Reify (B x)}}
+           -> Reify (All B xs)
+  AllReify {B = B} {{bReify}} = record
+    { reify = go _
+    } where
+        go : ∀ xs -> All B xs -> Term
+        go  []       tt      = def (quote tt₀) []
+        go (x ∷ xs) (y , ys) = vis₂ con (quote _,_) (reify {{bReify}} y) (go xs ys)
+
   ArgFunctor : RawFunctor Arg
   ArgFunctor = record
     { _<$>_ = λ{ f (arg i x) -> arg i (f x) }
@@ -116,6 +127,11 @@ instance
   AbsFunctor = record
     { _<$>_ = λ{ f (abs s x) -> abs s (f x) }
     }
+
+  {-DataFunctor : ∀ {α} -> RawFunctor {α} Data
+  DataFunctor = record
+    { _<$>_ = λ f d -> {!record d { consTypes = map f (consTypes d) }!}
+    }-}
 
   TCMonad : ∀ {α} -> RawMonad {α} TC
   TCMonad = record
@@ -170,7 +186,7 @@ unshiftBy : ℕ -> Term -> Term
 unshiftBy n = ren (_∸ n)
 
 unshift′ : Term -> Term
-unshift′ t = elam "_" t · quoteTerm tt
+unshift′ t = elam "_" t · def (quote tt₀) []
 
 takePi : ℕ -> Type -> Maybe Type
 takePi  0       a                = just unknown
@@ -182,10 +198,14 @@ dropPi  0       a                = just a
 dropPi (suc n) (rpi a (abs s b)) = dropPi n b
 dropPi  _       _                = nothing
 
-ecount : Type -> ℕ
-ecount (rpi (earg a) (abs s b)) = 1 + ecount b
-ecount (rpi  _       (abs s b)) = ecount b
-ecount  _                       = 0
+countPi : Type -> ℕ
+countPi (rpi a (abs s b)) = 1 + countPi b
+countPi  _                = 0
+
+countEPi : Type -> ℕ
+countEPi (rpi (earg a) (abs s b)) = 1 + countEPi b
+countEPi (rpi  _       (abs s b)) = countEPi b
+countEPi  _                       = 0
 
 elamsBy : Type -> Term -> Term
 elamsBy (rpi (earg a) (abs s b)) t = elam s (elamsBy b t)
@@ -198,10 +218,26 @@ resType = go 0 where
   go n (rpi a (abs s b)) = go (suc n) b
   go n  a                = unshiftBy n a
 
-getData : Name -> TC (ℕ × List (Name × Type))
+throw : ∀ {α} {A : Set α} -> String -> TC A
+throw s = typeError (strErr s ∷ [])
+
+{-getData : Name -> TC (ℕ × List (Name × Type))
 getData = getDefinition >=> λ
-  { (data-type n cs)           -> _,_ n <$> mapM (λ c -> _,_ c <$> getType c) cs
-  -- Why the sudden qualification, what am I doing wrong?
-  ; (Definition.record-type c) -> (λ a -> 1 , (c , a) ∷ []) <$> getType c
-  ;  _                         -> typeError (strErr "not a data" ∷ [])
+  { (data-type n cs) -> _,_ n <$> mapM (λ c -> _,_ c <$> getType c) cs
+  ; (record′ c)      -> (λ a -> 1 , (c , a) ∷ []) <$> getType c
+  ;  _               -> throw "not a data"
+  }-}
+
+getData : Name -> TC (Data Type)
+getData d = getType d >>= λ ab -> getDefinition d >>= λ
+  { (data-type p cs) -> mapM (λ c -> _,_ c ∘ dropPi p <$> getType c) cs >>= λ mans ->
+       case takePi p ab ⊗ (dropPi p ab ⊗ (mapM (uncurry λ c ma -> flip _,_ c <$> ma) mans)) of λ
+         {  nothing             -> throw "panic: getData: data"
+         ; (just (a , b , acs)) -> return ∘ uncurry (packData d a b) $ splitList acs
+         }
+  ; (record′ c)      -> getType c >>= λ a -> case dropPi (countPi ab) a of λ
+       {  nothing  -> throw "panic: getData: record"
+       ; (just a′) -> return $ packData d ab unknown (a′ ∷ []) (c , tt)
+       }
+  ;  _               -> throw "not a data"
   }

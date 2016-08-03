@@ -20,8 +20,8 @@ mutual
 
 instance
   {-# TERMINATING #-} -- Why?
-  DataReify : ∀ {i β} {I : Set i} {D : Data I β} {j}
-                {{reD : All ExtendReify (constructors D)}} -> Reify (μ D j)
+  DataReify : ∀ {i β} {I : Set i} {D : Data (Desc I β)} {j}
+                {{reD : All ExtendReify (consTypes D)}} -> Reify (μ D j)
   DataReify {ι} {β = β} {I = I} {D = D₀} = record { reify = reifyMu } where
     mutual
       reifySem : ∀ D {{reD : SemReify D}} -> ⟦ D ⟧ (μ D₀) -> Term
@@ -58,9 +58,9 @@ instance
         reifyAny (E ∷ Ds) {{reDs}} d a b ns r
 
       reifyMu : ∀ {j} -> μ D₀ j -> Term
-      reifyMu (node e) = reifyAny (constructors D₀)
-                                  (dataName     D₀)
-                                  (paramsType   D₀)
-                                  (indicesType  D₀)
-                                  (consNames    D₀)
+      reifyMu (node e) = reifyAny (consTypes D₀)
+                                  (dataName  D₀)
+                                  (parsTele  D₀)
+                                  (indsTele  D₀)
+                                  (consNames D₀)
                                    e

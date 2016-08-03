@@ -31,8 +31,8 @@ mutual
         -> (I -> Set β) -> Binder α β γ q I -> α ≤ℓ β -> Visibility -> Set β
   Foldᵇ C (coerce (A , D)) q v = Coerce′ q $ Pi v A λ x -> Fold C (D x)
 
-module _ {ι β} {I : Set ι} {D₀ : Data I β} (C : I -> Set β) where
-  module _ (hs : All (Fold C) (constructors D₀)) where
+module _ {ι β} {I : Set ι} {D₀ : Data (Desc I β)} (C : I -> Set β) where
+  module _ (hs : All (Fold C) (consTypes D₀)) where
     {-# TERMINATING #-}
     mutual
       foldHyp : (D : Desc I β) -> ⟦ D ⟧ (μ D₀) -> Hyp C D
@@ -62,13 +62,13 @@ module _ {ι β} {I : Set ι} {D₀ : Data I β} (C : I -> Set β) where
       foldAny (D ∷ E ∷ Ds) d a b (_ , ns) (h , hs) (inj₂ r) = foldAny (E ∷ Ds) d a b ns hs r
 
       foldMono : ∀ {j} -> μ D₀ j -> C j
-      foldMono (node e) = foldAny (constructors D₀)
-                                  (dataName     D₀)
-                                  (paramsType   D₀)
-                                  (indicesType  D₀)
-                                  (consNames    D₀)
+      foldMono (node e) = foldAny (consTypes D₀)
+                                  (dataName  D₀)
+                                  (parsTele  D₀)
+                                  (indsTele  D₀)
+                                  (consNames D₀)
                                    hs
                                    e
 
-  curryFoldMono : ∀ {j} -> μ D₀ j -> CurryAll (Fold C) (constructors D₀) (C j)
+  curryFoldMono : ∀ {j} -> μ D₀ j -> CurryAll (Fold C) (consTypes D₀) (C j)
   curryFoldMono d = curryAll λ hs -> foldMono hs d

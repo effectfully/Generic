@@ -4,18 +4,13 @@ open import Relation.Nullary public
 open import Relation.Nullary.Decidable hiding (map) public
 open import Relation.Binary using (Decidable) public
 
-open import Function
-open import Relation.Nullary
-open import Data.Bool.Base hiding (_≟_)
-open import Data.Product
-
+open import Generic.Lib.Intro
 open import Generic.Lib.Propositional
 open import Generic.Lib.Heteroindexed
 
-infixl 10 _%
-infix  3  _#_
+open import Relation.Nullary
 
-_% = _∘_
+infix 3 _#_
 
 IsSet : ∀ {α} -> Set α -> Set α
 IsSet A = Decidable {A = A} _≡_
@@ -112,6 +107,32 @@ dsubst B C (no  c)    z g h = h c
 dsubst′ : ∀ {α β γ} {A : Set α} {C : Set γ} {x y}
         -> (B : A -> Set β) -> x # y -> B x -> (B y -> C) -> (x ≢ y -> C) -> C
 dsubst′ B = dsubst B _
+
+,-inj : ∀ {α β} {A : Set α} {B : A -> Set β} {x₁ x₂} {y₁ : B x₁} {y₂ : B x₂}
+      -> (x₁ , y₁) ≡ (x₂ , y₂) -> [ B ] y₁ ≅ y₂
+,-inj refl = irefl
+
+inj₁-inj : ∀ {α β} {A : Set α} {B : Set β} {x₁ x₂ : A}
+         -> inj₁ {B = B} x₁ ≡ inj₁ x₂ -> x₁ ≡ x₂
+inj₁-inj refl = refl
+
+inj₂-inj : ∀ {α β} {A : Set α} {B : Set β} {y₁ y₂ : B}
+         -> inj₂ {A = A} y₁ ≡ inj₂ y₂ -> y₁ ≡ y₂
+inj₂-inj refl = refl
+
+_<,>ᵈ_ : ∀ {α β} {A : Set α} {B : Set β} {x₁ x₂ : A} {y₁ y₂ : B}
+       -> x₁ # x₂ -> y₁ # y₂ -> x₁ , y₁ # x₂ , y₂
+_<,>ᵈ_ = dcong₂ _,_ (inds-homo ∘ ,-inj)
+
+_<,>ᵈᵒ_ : ∀ {α β} {A : Set α} {B : A -> Set β} {x₁ x₂} {y₁ : B x₁} {y₂ : B x₂}
+        -> x₁ # x₂ -> (∀ y₂ -> y₁ # y₂) -> x₁ , y₁ # x₂ , y₂
+_<,>ᵈᵒ_ = dhcong₂ _,_ ,-inj
+
+decSum : ∀ {α β} {A : Set α} {B : Set β} -> IsSet A -> IsSet B -> IsSet (A ⊎ B)
+decSum f g (inj₁ x₁) (inj₁ x₂) = dcong inj₁ inj₁-inj (f x₁ x₂)
+decSum f g (inj₂ y₁) (inj₂ y₂) = dcong inj₂ inj₂-inj (g y₁ y₂)
+decSum f g (inj₁ x₁) (inj₂ y₂) = no λ()
+decSum f g (inj₂ y₁) (inj₁ x₂) = no λ()
 
 module _ where
   import Relation.Binary.PropositionalEquality as B

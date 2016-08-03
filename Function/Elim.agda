@@ -53,18 +53,18 @@ mutual
   Elimᵇ {γ = γ} {q = q} C (coerce (A , D)) v k =
     Coerce′ (cong (γ ⊔_) q) $ Pi v A λ x -> Elim C (D x) (k ∘ coerce′ q ∘ _,_ x)
 
-module _ {ι β γ} {I : Set ι} {D₀ : Data I β} (C : ∀ {j} -> μ D₀ j -> Set γ) where
+module _ {ι β γ} {I : Set ι} {D₀ : Data (Desc I β)} (C : ∀ {j} -> μ D₀ j -> Set γ) where
   K : Name -> Type -> Type -> (Ds : List (Desc I β)) -> All (const Name) Ds -> Set (ι ⊔ β)
   K d a b Ds ns = ∀ {j} -> Node D₀ (packData d a b Ds ns) j -> μ D₀ j
 
   Elims : ∀ d a b (Ds : List (Desc I β)) ns -> K d a b Ds ns -> Set (β ⊔ γ)
   Elims d a b Ds ns = AllAny (λ j D -> Extend D (μ D₀) j) (Elim C) Ds
 
-  module _ (hs : Elims (dataName     D₀)
-                       (paramsType   D₀)
-                       (indicesType  D₀)
-                       (constructors D₀)
-                       (consNames    D₀)
+  module _ (hs : Elims (dataName  D₀)
+                       (parsTele  D₀)
+                       (indsTele  D₀)
+                       (consTypes D₀)
+                       (consNames D₀)
                         node) where
     {-# TERMINATING #-}
     mutual
@@ -104,10 +104,10 @@ module _ {ι β γ} {I : Set ι} {D₀ : Data I β} (C : ∀ {j} -> μ D₀ j ->
       elimAny (D ∷ E ∷ Ds) d a b (n , ns) (h , hs) (inj₂ r) = elimAny (E ∷ Ds) d a b ns hs r
 
       elim : ∀ {j} -> (d : μ D₀ j) -> C d
-      elim (node e) = elimAny (constructors D₀)
-                              (dataName     D₀)
-                              (paramsType   D₀)
-                              (indicesType  D₀)
-                              (consNames    D₀)
+      elim (node e) = elimAny (consTypes D₀)
+                              (dataName  D₀)
+                              (parsTele  D₀)
+                              (indsTele  D₀)
+                              (consNames D₀)
                                hs
                                e

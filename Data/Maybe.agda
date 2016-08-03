@@ -1,11 +1,9 @@
 module Generic.Data.Maybe where
 
-open import Generic.Main
-
-import Data.Maybe.Base as Maybe
+open import Generic.Main as Main hiding (Maybe; just; nothing)
 
 Maybe : ∀ {α} -> Set α -> Set α
-Maybe = readData Maybe.Maybe
+Maybe = readData Main.Maybe
 
 pattern just x  = #₀ (x , lrefl)
 pattern nothing = !#₁ lrefl

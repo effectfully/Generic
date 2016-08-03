@@ -98,24 +98,13 @@ mutual
           -> Binder α β γ q I -> α ≤ℓ β -> (I -> Set β) -> I -> Set β
   Extendᵇ (coerce (A , D)) q B j = Coerce′ q $ ∃ λ x -> Extend (D x) B j
 
-record Data {ι} (I : Set ι) β : Set (ι ⊔ lsuc β) where
-  no-eta-equality
-  constructor packData
-  field
-    dataName     : Name
-    paramsType   : Type
-    indicesType  : Type
-    constructors : List (Desc I β)
-    consNames    : All (const Name) constructors
-open Data public
-
-module _ {ι β} {I : Set ι} (D : Data I β) where
+module _ {ι β} {I : Set ι} (D : Data (Desc I β)) where
   mutual
     data μ j : Set β where
       node : Node D j -> μ j
 
-    Node : Data I β -> I -> Set β
-    Node D j = Any (λ C -> Extend C μ j) (constructors D)
+    Node : Data (Desc I β) -> I -> Set β
+    Node D j = Any (λ C -> Extend C μ j) (consTypes D)
 
 mutual
   Cons : ∀ {ι β} {I : Set ι} -> (I -> Set β) -> Desc I β -> Set β
@@ -127,9 +116,9 @@ mutual
         -> (I -> Set β) -> Binder α β γ q I -> α ≤ℓ β -> Visibility -> Set β
   Consᵇ B (coerce (A , D)) q v = Coerce′ q $ Pi v A λ x -> Cons B (D x)
 
-cons : ∀ {ι β} {I : Set ι} {D} -> (D₀ : Data I β) -> D ∈ constructors D₀ -> Cons (μ D₀) D
+cons : ∀ {ι β} {I : Set ι} {D} -> (D₀ : Data (Desc I β)) -> D ∈ consTypes D₀ -> Cons (μ D₀) D
 cons {D = D} D₀ p = go D λ e ->
-  node (mapAny (constructors D₀) (λ q -> subst (λ E -> Extend E _ _) q e) p) where
+  node (mapAny (consTypes D₀) (λ q -> subst (λ E -> Extend E _ _) q e) p) where
     mutual
       go : ∀ {ι β} {I : Set ι} {B : I -> Set β}
         -> (D : Desc I β) -> (∀ {j} -> Extend D B j -> B j) -> Cons B D
@@ -142,11 +131,11 @@ cons {D = D} D₀ p = go D λ e ->
       goᵇ {q = q} {v = v} (coerce (A , D)) k =
         coerce′ q $ lam v λ x -> go (D x) (k ∘ coerce′ q ∘ _,_ x)
 
-node-inj : ∀ {i β} {I : Set i} {D : Data I β} {j} {e₁ e₂ : Node D D j}
+node-inj : ∀ {i β} {I : Set i} {D : Data (Desc I β)} {j} {e₁ e₂ : Node D D j}
          -> node {D = D} e₁ ≡ node e₂ -> e₁ ≡ e₂
 node-inj refl = refl
 
-μ′ : ∀ {β} -> Data ⊤₀ β -> Set β
+μ′ : ∀ {β} -> Data (Desc ⊤₀ β) -> Set β
 μ′ D = μ D tt
 
 pos : ∀ {β} -> Desc ⊤₀ β

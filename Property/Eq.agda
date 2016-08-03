@@ -18,8 +18,8 @@ mutual
 
 instance
   {-# TERMINATING #-} -- Why?
-  DataEq : ∀ {i β} {I : Set i} {D : Data I β} {j}
-             {{eqD : All ExtendEq (constructors D)}} -> Eq (μ D j)
+  DataEq : ∀ {i β} {I : Set i} {D : Data (Desc I β)} {j}
+             {{eqD : All ExtendEq (consTypes D)}} -> Eq (μ D j)
   DataEq {ι} {β = β} {I = I} {D = D₀} = record { _≟_ = decMu } where
     mutual
       decSem : ∀ D {{eqD : SemEq D}} -> IsSet (⟦ D ⟧ (μ D₀))
@@ -48,10 +48,10 @@ instance
         decSum (decExtend D {{eqD}}) (decAny (E ∷ Ds) {{eqDs}} d a b ns) s₁ s₂
 
       decMu : ∀ {j} -> IsSet (μ D₀ j)
-      decMu (node e₁) (node e₂) = dcong node node-inj $ decAny (constructors D₀)
-                                                               (dataName     D₀)
-                                                               (paramsType   D₀)
-                                                               (indicesType  D₀)
-                                                               (consNames    D₀)
+      decMu (node e₁) (node e₂) = dcong node node-inj $ decAny (consTypes D₀)
+                                                               (dataName  D₀)
+                                                               (parsTele  D₀)
+                                                               (indsTele  D₀)
+                                                               (consNames D₀)
                                                                 e₁
                                                                 e₂
