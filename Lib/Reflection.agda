@@ -12,6 +12,8 @@ open import Generic.Lib.Nat
 open import Generic.Lib.Maybe
 open import Generic.Lib.List
 
+import Data.Nat.Base as Nat
+
 infixl 3 _·_
 
 record Reify {α} (A : Set α) : Set α where
@@ -22,11 +24,14 @@ record Reify {α} (A : Set α) : Set α where
     reflect = unify ∘ reify
 open Reify {{...}} public
 
-pattern earg x = arg (arg-info expl rel) x
-{-# DISPLAY arg (arg-info expl relevant) = earg #-}
+pattern earg  x = arg (arg-info expl rel) x
+{-# DISPLAY arg (arg-info expl relevant) = earg  #-}
 
-pattern iarg x = arg (arg-info impl rel) x
-{-# DISPLAY arg (arg-info impl relevant) = iarg #-}
+pattern iarg  x = arg (arg-info impl rel) x
+{-# DISPLAY arg (arg-info impl relevant) = iarg  #-}
+
+pattern iiarg x = arg (arg-info inst rel) x
+{-# DISPLAY arg (arg-info inst relevant) = iiarg #-}
 
 vis : {A : Set} -> (A -> List (Arg Term) -> Term) -> A -> List Term -> Term
 vis k x = k x ∘ map earg
@@ -58,6 +63,9 @@ f · x = vis₂ def (quote id) f x
 
 unarg : ∀ {A} -> Arg A -> A
 unarg (arg _ x) = x
+
+pvars : List String -> List (Arg Pattern)
+pvars = map (earg ∘ rvar)
 
 record Data {α} (A : Set α) : Set α where
   no-eta-equality
@@ -101,7 +109,7 @@ instance
 
   ℕReify : Reify ℕ
   ℕReify = record
-    { reify = fold (quoteTerm 0) (vis₁ con (quote suc))
+    { reify = Nat.fold (quoteTerm 0) (vis₁ con (quote suc))
     }
 
   ListReify : ∀ {α} {A : Set α} {{aReify : Reify A}} -> Reify (List A)
@@ -128,10 +136,10 @@ instance
     { _<$>_ = λ{ f (abs s x) -> abs s (f x) }
     }
 
-  {-DataFunctor : ∀ {α} -> RawFunctor {α} Data
-  DataFunctor = record
-    { _<$>_ = λ f d -> {!record d { consTypes = map f (consTypes d) }!}
-    }-}
+  -- DataFunctor : ∀ {α} -> RawFunctor {α} Data
+  -- DataFunctor = record
+  --   { _<$>_ = λ f d -> {!record d { consTypes = map f (consTypes d) }!}
+  --   }
 
   TCMonad : ∀ {α} -> RawMonad {α} TC
   TCMonad = record
@@ -157,7 +165,7 @@ keep ι (suc n) = suc (ι n)
 {-# TERMINATING #-}
 mutual
   ren : (ℕ -> ℕ) -> Term -> Term
-  ren ι (rvar x xs)     = rvar (ι x) (rens ι xs)
+  ren ι (rvar v xs)     = rvar (ι v) (rens ι xs)
   ren ι (con c xs)      = con c (rens ι xs)
   ren ι (def f xs)      = def f (rens ι xs)
   ren ι (rlam v t)      = rlam v (ren (keep ι) <$> t)
@@ -188,6 +196,15 @@ unshiftBy n = ren (_∸ n)
 unshift′ : Term -> Term
 unshift′ t = elam "_" t · def (quote tt₀) []
 
+countPi : Type -> ℕ
+countPi (rpi a (abs s b)) = 1 + countPi b
+countPi  _                = 0
+
+countEPi : Type -> ℕ
+countEPi (rpi (earg a) (abs s b)) = 1 + countEPi b
+countEPi (rpi  _       (abs s b)) = countEPi b
+countEPi  _                       = 0
+
 takePi : ℕ -> Type -> Maybe Type
 takePi  0       a                = just unknown
 takePi (suc n) (rpi a (abs s b)) = rpi a ∘ abs s <$> takePi n b
@@ -198,14 +215,9 @@ dropPi  0       a                = just a
 dropPi (suc n) (rpi a (abs s b)) = dropPi n b
 dropPi  _       _                = nothing
 
-countPi : Type -> ℕ
-countPi (rpi a (abs s b)) = 1 + countPi b
-countPi  _                = 0
-
-countEPi : Type -> ℕ
-countEPi (rpi (earg a) (abs s b)) = 1 + countEPi b
-countEPi (rpi  _       (abs s b)) = countEPi b
-countEPi  _                       = 0
+appendType : Type -> Type -> Type
+appendType (rpi i (abs s a)) b = rpi i (abs s (appendType a b))
+appendType  _                b = b
 
 elamsBy : Type -> Term -> Term
 elamsBy (rpi (earg a) (abs s b)) t = elam s (elamsBy b t)
@@ -218,15 +230,49 @@ resType = go 0 where
   go n (rpi a (abs s b)) = go (suc n) b
   go n  a                = unshiftBy n a
 
+implPi : Type -> Type
+implPi (rpi (earg a)  (abs s b)) = rpi (iarg a)  (abs s (implPi b))
+implPi (rpi (arg i a) (abs s b)) = rpi (arg i a) (abs s (implPi b))
+implPi  b                        = b
+
+piToArgs : ℕ -> Type -> List (Arg Term)
+piToArgs (suc n) (rpi (arg i a) (abs s b)) = arg i (rvar n []) ∷ piToArgs n b
+piToArgs  n       b                        = []
+
+named : String -> String
+named s = if s == "_" then "x" else s
+
+epiToStrs : Type -> List String
+epiToStrs (rpi (earg _) (abs s b)) = named s ∷ epiToStrs b
+epiToStrs (rpi  _       (abs s b)) = epiToStrs b
+epiToStrs  b                       = []
+
+{-# TERMINATING #-}
+mutual
+  mapName : (ℕ -> List (Arg Term) -> Term) -> Name -> Term -> Term
+  mapName f n (rvar v xs)     = rvar v (mapNames f n xs)
+  mapName f n (con m xs)      =
+    (if n == m then f 0 else Term.con m) (mapNames f n xs)
+  mapName f n (def m xs)      =
+    (if n == m then f 0 else Term.def m) (mapNames f n xs)
+  mapName f n (rlam v t)      = rlam v (mapName (f ∘ suc) n <$> t)
+  mapName f n (pat-lam cs xs) = undefined where postulate undefined : _
+  mapName f n (rpi a b)       = rpi (mapName f n <$> a) (mapName (f ∘ suc) n <$> b)
+  mapName f n (sort s)        = sort (mapNameSort f n s)
+  mapName f n (lit l)         = lit l
+  mapName f n (meta x xs)     = meta x (mapNames f n xs)
+  mapName f n  unknown        = unknown
+
+  mapNames : (ℕ -> List (Arg Term) -> Term) -> Name -> List (Arg Term) -> List (Arg Term)
+  mapNames f n = map (fmap (mapName f n))
+
+  mapNameSort : (ℕ -> List (Arg Term) -> Term) -> Name -> Sort -> Sort
+  mapNameSort f n (set t) = set (mapName f n t)
+  mapNameSort f n (lit l) = lit l
+  mapNameSort f n unknown = unknown
+
 throw : ∀ {α} {A : Set α} -> String -> TC A
 throw s = typeError (strErr s ∷ [])
-
-{-getData : Name -> TC (ℕ × List (Name × Type))
-getData = getDefinition >=> λ
-  { (data-type n cs) -> _,_ n <$> mapM (λ c -> _,_ c <$> getType c) cs
-  ; (record′ c)      -> (λ a -> 1 , (c , a) ∷ []) <$> getType c
-  ;  _               -> throw "not a data"
-  }-}
 
 getData : Name -> TC (Data Type)
 getData d = getType d >>= λ ab -> getDefinition d >>= λ
@@ -241,3 +287,7 @@ getData d = getType d >>= λ ab -> getDefinition d >>= λ
        }
   ;  _               -> throw "not a data"
   }
+
+macro
+  typeOf : Term -> Term -> TC _
+  typeOf t ?r = inferType t >>= λ a -> quoteTC a >>= unify ?r

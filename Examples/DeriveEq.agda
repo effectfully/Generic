@@ -58,19 +58,13 @@ module DeriveEqD where
     D′ = readData D
 
     module _ {α β} {A : Set α} {B : A -> Set β} where
-      c₁′ : ∀ {x n} (ys : Vec (B x) n) m -> A -> D′ A B ys m
-      c₁′ = readCons c₁
-
-      c₂′ : ∀ {x n m y} {ys zs : Vec (B x) n}
-          -> D′ A B (y ∷ᵥ ys) 0 -> D′ A B ys (suc n) -> Vec A m -> D′ A B zs n
-      c₂′ = readCons c₂
-
       DInj : ∀ {n m x} {ys : Vec (B x) n} -> D A B ys m ↦ D′ A B ys m
       DInj = record { R } where
         module R where
+          unquoteDecl foldD = deriveFoldTo foldD (quote D)
+
           to : ∀ {n m x} {ys : Vec (B x) n} -> D A B ys m -> D′ A B ys m
-          to (c₁ ys m x) = c₁′ ys m x
-          to (c₂ d e xs) = c₂′ (to d) (to e) xs
+          to = foldD (D′ A B) (readCons c₁) (readCons c₂)
 
           from : ∀ {n m x} {ys : Vec (B x) n} -> D′ A B ys m -> D A B ys m
           from d = uncoerce d

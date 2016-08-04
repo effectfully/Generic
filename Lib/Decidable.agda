@@ -9,6 +9,7 @@ open import Generic.Lib.Propositional
 open import Generic.Lib.Heteroindexed
 
 open import Relation.Nullary
+import Data.String as String
 
 infix 3 _#_
 
@@ -41,7 +42,7 @@ viaInj {A = A} {B} inj = record
       ; injective = λ q -> right (from-to _) (trans (cong from q) (from-to _))
       }
   } where open _↦_ inj
-    
+
 _#_ : ∀ {α} {A : Set α} -> A -> A -> Set
 x # y = Dec (x ≡ y)
 
@@ -153,3 +154,7 @@ module _ where
         ; injective = liftBase
         }
     }
+
+instance
+  StringEq : Eq String
+  StringEq = viaBase String._≟_
