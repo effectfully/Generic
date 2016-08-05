@@ -66,35 +66,30 @@ quoteCons : Name -> Term -> Term -> Term
 quoteCons n D ns = vis₂ def (quote cons) D ∘ vis₁ def (quote proj₂) ∘
                      vis₁ def (quote from-just) $ vis₂ def (quote lookupAllConst) (reify n) ns
 
+unifyWhenMu : Term -> (∀ {ι β} {I : Set ι} -> Data (Desc I β) -> Term -> Term -> Term) -> TC _
+unifyWhenMu ?r k = inferType ?r >>= resType >>> λ
+  { (def (quote μ) (iarg qι ∷ iarg qβ ∷ iarg qI ∷ earg qD ∷ _)) ->
+       unquoteTC qι >>= λ ι ->
+       unquoteTC qβ >>= λ β ->
+       bindTC (unquoteTC qI) λ (I : Set ι) ->
+       bindTC (unquoteTC qD) λ (D : Data (Desc I β)) -> case D of λ{
+         (packData d a b cs ns) -> quoteTC ns >>= unify ?r ∘ k D qD
+       }
+  ;  _                                                          ->
+       throw "the return type must be μ"
+  }
+  
 macro
   readData : Name -> Term -> TC _
   readData d ?r = quoteData d >>= unify ?r
 
-  -- TODO.
   readCons : Name -> Term -> TC _
-  readCons n ?r = inferType ?r >>= resType >>> λ
-    { (def (quote μ) as) -> case explOnly as of λ
-         { (D@(con (quote packData) xs) ∷ _) -> case explOnly xs of λ
-              { (_ ∷ _ ∷ _ ∷ _ ∷ ns ∷ []) -> unify ?r (quoteCons n D ns)
-              ;  _                         -> panic "readCons"
-              }
-         ;  _                                -> panic "readCons"
-         }
-    ;  _                 -> throw "can't read"
-    }
+  readCons n ?r = unifyWhenMu ?r λ _ -> quoteCons n
 
   gcoerce : Name -> Term -> TC _
-  gcoerce fd ?r = inferType ?r >>= resType >>> λ
-    { (def (quote μ) (iarg qι ∷ iarg qβ ∷ iarg qI ∷ earg qD ∷ _)) ->
-         unquoteTC qι >>= λ ι ->
-         unquoteTC qβ >>= λ β ->
-         bindTC (unquoteTC qI) λ (I : Set ι) ->
-         bindTC (unquoteTC qD) λ (D : Data (Desc I β)) -> case D of λ{
-           (packData d a b cs ns) ->
-             mapM (λ n -> quoteCons n qD <$> quoteTC ns) (allToList ns) >>= λ ts ->
-             unify ?r $ vis def fd (curryBy b (vis₁ def (quote μ) qD) ∷ ts)
-         }
-    ;  _                                                          -> throw "nope"
+  gcoerce fd ?r = unifyWhenMu ?r λ{ (packData d a b cs ns) qD qns ->
+      let cs′ = unmap (λ n -> quoteCons n qD qns) ns in
+      vis def fd (curryBy b (vis₁ def (quote μ) qD) ∷ cs′)
     }
 
   uncoerce : ∀ {ι β} {I : Set ι} {D : Data (Desc I β)} {j} -> μ D j -> Term -> TC _
