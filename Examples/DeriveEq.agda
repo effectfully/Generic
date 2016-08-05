@@ -9,14 +9,16 @@ open import Data.Vec as Vec using (Vec) renaming ([] to []ᵥ; _∷_ to _∷ᵥ_
 module DeriveEqVec where
   module _ where
     private
-      Vec′ : ∀ {α} -> Set α -> ℕ -> Set α
+      Vec′ : TypeOf Vec
       Vec′ = readData Vec
+
+    unquoteDecl foldVec = deriveFoldTo foldVec (quote Vec)
 
     VecInj : ∀ {n α} {A : Set α} -> Vec A n ↦ Vec′ A n
     VecInj {A = A} = record { R } where
       module R where
         to : ∀ {n} -> Vec A n -> Vec′ A n
-        to = Vec.foldr (Vec′ _) (readCons _∷ᵥ_) (readCons []ᵥ)
+        to = gcoerce foldVec
 
         from : ∀ {n} -> Vec′ A n -> Vec A n
         from xs = uncoerce xs
@@ -54,17 +56,29 @@ module DeriveEqD where
        -> D A B (y ∷ᵥ ys) 0 -> D A B ys (suc n) -> Vec A m -> D A B zs n
 
   private
-    D′ : ∀ {α β} (A : Set α) (B : A -> Set β) {n x} -> Vec (B x) n -> ℕ -> Set (α ⊔ β)
+    D′ : TypeOf D
     D′ = readData D
+
+    unquoteDecl foldD = deriveFoldTo foldD (quote D)
+
+  --   module _ {α β} {A : Set α} {B : A -> Set β} where
+  --     DInj : ∀ {n m x} {ys : Vec (B x) n} -> D A B ys m ↦ D′ A B ys m
+  --     DInj = record
+  --       { to      = gcoerce foldD
+  --       ; from    = λ d -> uncoerce d
+  --       ; from-to = {!!}
+  --       }
 
     module _ {α β} {A : Set α} {B : A -> Set β} where
       DInj : ∀ {n m x} {ys : Vec (B x) n} -> D A B ys m ↦ D′ A B ys m
       DInj = record { R } where
         module R where
-          unquoteDecl foldD = deriveFoldTo foldD (quote D)
+          -- For tests.
+          -- to : ∀ {n m x} {ys : Vec (B x) n} -> D A B ys m -> D′ A B ys m
+          -- to = foldD (D′ A B) (readCons c₁) (readCons c₂)
 
           to : ∀ {n m x} {ys : Vec (B x) n} -> D A B ys m -> D′ A B ys m
-          to = foldD (D′ A B) (readCons c₁) (readCons c₂)
+          to = gcoerce foldD
 
           from : ∀ {n m x} {ys : Vec (B x) n} -> D′ A B ys m -> D A B ys m
           from d = uncoerce d

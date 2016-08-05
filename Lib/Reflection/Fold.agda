@@ -52,11 +52,14 @@ deriveFoldTo f d =
   declareDef (earg f) (foldTypeOf D) >>
   defineFun f (clausesOf D f)
 
+-- This doesn't seem to define the most general fold for some reason.
+deriveFold : Name -> TC Name
+deriveFold d =
+  freshName ("fold" ++ˢ showName d) >>= λ fd ->
+  deriveFoldTo fd d >>
+  return fd
+
 -- This drops leading implicit arguments, because `fd` is "applied" to the empty spine.
--- Which breaks unification in some cases.
 macro
   fold : Name -> Term -> TC _
-  fold d ?r =
-    freshName ("fold" ++ˢ showName d) >>= λ fd ->
-    deriveFoldTo fd d >>
-    unify ?r (def fd [])
+  fold d ?r = deriveFold d >>= λ fd -> unify ?r (def fd [])

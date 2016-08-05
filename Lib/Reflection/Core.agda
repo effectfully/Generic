@@ -275,15 +275,18 @@ mutual
 throw : ∀ {α} {A : Set α} -> String -> TC A
 throw s = typeError (strErr s ∷ [])
 
+panic : ∀ {α} {A : Set α} -> String -> TC A
+panic s = throw $ "panic: " ++ˢ s
+
 getData : Name -> TC (Data Type)
 getData d = getType d >>= λ ab -> getDefinition d >>= λ
   { (data-type p cs) -> mapM (λ c -> _,_ c ∘ dropPi p <$> getType c) cs >>= λ mans ->
        case takePi p ab ⊗ (dropPi p ab ⊗ (mapM (uncurry λ c ma -> flip _,_ c <$> ma) mans)) of λ
-         {  nothing             -> throw "panic: getData: data"
+         {  nothing             -> panic "getData: data"
          ; (just (a , b , acs)) -> return ∘ uncurry (packData d a b) $ splitList acs
          }
   ; (record′ c)      -> getType c >>= λ a -> case dropPi (countPi ab) a of λ
-       {  nothing  -> throw "panic: getData: record"
+       {  nothing  -> panic "getData: record"
        ; (just a′) -> return $ packData d ab unknown (a′ ∷ []) (c , tt)
        }
   ;  _               -> throw "not a data"

@@ -54,8 +54,8 @@ splitWith₂ refl C (x₁ , y₁) (x₂ , y₂) g = g x₁ x₂ y₁ y₂
 data Coerce {β} : ∀ {α} -> α ≡ β -> Set α -> Set β where
   coerce : ∀ {A} -> A -> Coerce refl A
 
-gcoerce : ∀ {α β} {A : Set α} {q : α ≡ β} -> A -> Coerce q A
-gcoerce {q = refl} = coerce
+qcoerce : ∀ {α β} {A : Set α} {q : α ≡ β} -> A -> Coerce q A
+qcoerce {q = refl} = coerce
 
 mutual
   Binder : ∀ {ι} α β γ -> ι ⊔ lsuc (α ⊔ β) ≡ γ -> Set ι -> Set γ
@@ -76,7 +76,7 @@ pattern iipi A D = π _ inst (coerce (A , D))
 {-# DISPLAY π _ inst (coerce (A , D)) = iipi A D #-}
 
 _⇒_ : ∀ {ι α β} {I : Set ι} {{q : α ≤ℓ β}} -> Set α -> Desc I β -> Desc I β
-_⇒_ {{q}} A D = π q expl (gcoerce (A , λ _ -> D))
+_⇒_ {{q}} A D = π q expl (qcoerce (A , λ _ -> D))
 
 mutual
   ⟦_⟧ : ∀ {ι β} {I : Set ι} -> Desc I β -> (I -> Set β) -> Set β

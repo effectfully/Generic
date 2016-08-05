@@ -11,8 +11,11 @@ D′ = readData D
 
 unquoteDecl foldD = deriveFoldTo foldD (quote D)
 
+-- inj : ∀ {α β} {A : Set α} {B : ℕ -> Set β} {n xs} {y : B n} -> D A B y xs -> D′ A B y xs
+-- inj = foldD (D′ _ _) (readCons c₁) (readCons c₂)
+
 inj : ∀ {α β} {A : Set α} {B : ℕ -> Set β} {n xs} {y : B n} -> D A B y xs -> D′ A B y xs
-inj = foldD (D′ _ _) (readCons c₁) (readCons c₂)
+inj = gcoerce foldD
 
 outj : ∀ {α β} {A : Set α} {B : ℕ -> Set β} {n xs} {y : B n} -> D′ A B y xs -> D A B y xs
 outj d = uncoerce d

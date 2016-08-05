@@ -55,36 +55,51 @@ quoteData d =
       }
    }
 
-panic : ∀ {α} {A : Set α} -> TC A
-panic = throw "panic: something happened"
-
 -- This doesn't work, because `quoteData` doesn't generate implicit lambdas,
 -- because otherwise nothing would work due to the #2118 issue.
 readDataTo : Name -> Name -> TC _
 readDataTo d′ d = getType d >>= declareDef (earg d′)
                >> quoteData d >>= λ qd -> defineFun d′ (clause [] qd ∷ [])
 
+-- This can be typed, but the inlined version should be much faster.
+quoteCons : Name -> Term -> Term -> Term
+quoteCons n D ns = vis₂ def (quote cons) D ∘ vis₁ def (quote proj₂) ∘
+                     vis₁ def (quote from-just) $ vis₂ def (quote lookupAllConst) (reify n) ns
+
 macro
   readData : Name -> Term -> TC _
   readData d ?r = quoteData d >>= unify ?r
 
+  -- TODO.
   readCons : Name -> Term -> TC _
-  readCons c ?r = inferType ?r >>= resType >>> λ
+  readCons n ?r = inferType ?r >>= resType >>> λ
     { (def (quote μ) as) -> case explOnly as of λ
-         { (D₀@(con (quote packData) xs) ∷ _) -> case explOnly xs of λ
-              { (_ ∷ _ ∷ _ ∷ Ds ∷ cs ∷ []) ->
-                   unify ?r ∘′ vis₂ def (quote cons) D₀ ∘′ vis₁ def (quote proj₂)
-                     ∘′ vis₁ def (quote from-just) $ vis₂ def (quote lookupAllConst) (reify c) cs
-              ;  _                         -> panic
+         { (D@(con (quote packData) xs) ∷ _) -> case explOnly xs of λ
+              { (_ ∷ _ ∷ _ ∷ _ ∷ ns ∷ []) -> unify ?r (quoteCons n D ns)
+              ;  _                         -> panic "readCons"
               }
-         ;  _                                 -> panic
+         ;  _                                -> panic "readCons"
          }
     ;  _                 -> throw "can't read"
     }
 
+  gcoerce : Name -> Term -> TC _
+  gcoerce fd ?r = inferType ?r >>= resType >>> λ
+    { (def (quote μ) (iarg qι ∷ iarg qβ ∷ iarg qI ∷ earg qD ∷ _)) ->
+         unquoteTC qι >>= λ ι ->
+         unquoteTC qβ >>= λ β ->
+         bindTC (unquoteTC qI) λ (I : Set ι) ->
+         bindTC (unquoteTC qD) λ (D : Data (Desc I β)) -> case D of λ{
+           (packData d a b cs ns) ->
+             mapM (λ n -> quoteCons n qD <$> quoteTC ns) (allToList ns) >>= λ ts ->
+             unify ?r $ vis def fd (curryBy b (vis₁ def (quote μ) qD) ∷ ts)
+         }
+    ;  _                                                          -> throw "nope"
+    }
+
   uncoerce : ∀ {ι β} {I : Set ι} {D : Data (Desc I β)} {j} -> μ D j -> Term -> TC _
-  uncoerce {D = packData n a b Ds ns} d ?r =
-    quoteTC d >>= λ qd -> unify ?r ∘′ vis def (quote curryFoldMono)
-      $ euncurryBy b (vis def n (replicate (countEPi a) unknown))
-      ∷ qd
+  uncoerce {D = packData d a b Ds ns} e ?r =
+    quoteTC e >>= λ qe -> unify ?r ∘′ vis def (quote curryFoldMono)
+      $ euncurryBy b (vis def d (replicate (countEPi a) unknown))
+      ∷ qe
       ∷ map (λ n -> con n []) (allToList ns)
