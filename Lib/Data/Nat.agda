@@ -1,4 +1,4 @@
-module Generic.Lib.Nat where
+module Generic.Lib.Data.Nat where
 
 open import Data.Nat.Base hiding (_⊔_; _≟_; fold) public
 

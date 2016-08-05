@@ -1,8 +1,8 @@
-module Generic.Lib.Heteroindexed where
+module Generic.Lib.Equality.Heteroindexed where
 
 open import Data.Product
 
-open import Generic.Lib.Propositional
+open import Generic.Lib.Equality.Propositional
 
 data [_]_≅_ {ι α} {I : Set ι} {i} (A : I -> Set α) (x : A i) : ∀ {j} -> A j -> Set where
   irefl : [ A ] x ≅ x

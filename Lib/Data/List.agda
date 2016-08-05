@@ -1,12 +1,13 @@
-module Generic.Lib.List where
+module Generic.Lib.Data.List where
 
 open import Data.List.Base public
 
 open import Generic.Lib.Intro
-open import Generic.Lib.Propositional
+open import Generic.Lib.Equality.Propositional
 open import Generic.Lib.Decidable
 open import Generic.Lib.Category
-open import Generic.Lib.Maybe
+open import Generic.Lib.Data.Nat
+open import Generic.Lib.Data.Maybe
 
 import Data.List as List
 

@@ -5,8 +5,8 @@ open import Relation.Nullary.Decidable hiding (map) public
 open import Relation.Binary using (Decidable) public
 
 open import Generic.Lib.Intro
-open import Generic.Lib.Propositional
-open import Generic.Lib.Heteroindexed
+open import Generic.Lib.Equality.Propositional
+open import Generic.Lib.Equality.Heteroindexed
 
 open import Relation.Nullary
 import Data.String as String
@@ -154,7 +154,3 @@ module _ where
         ; injective = liftBase
         }
     }
-
-instance
-  StringEq : Eq String
-  StringEq = viaBase String._≟_

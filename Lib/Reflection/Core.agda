@@ -1,4 +1,4 @@
-module Generic.Lib.Reflection where
+module Generic.Lib.Reflection.Core where
 
 open import Reflection
   renaming (visible to expl; hidden to impl; instance′ to inst;
@@ -8,9 +8,10 @@ open import Reflection
 open import Generic.Lib.Intro
 open import Generic.Lib.Decidable
 open import Generic.Lib.Category
-open import Generic.Lib.Nat
-open import Generic.Lib.Maybe
-open import Generic.Lib.List
+open import Generic.Lib.Data.Nat
+open import Generic.Lib.Data.String
+open import Generic.Lib.Data.Maybe
+open import Generic.Lib.Data.List
 
 import Data.Nat.Base as Nat
 
@@ -289,5 +290,6 @@ getData d = getType d >>= λ ab -> getDefinition d >>= λ
   }
 
 macro
-  typeOf : Term -> Term -> TC _
-  typeOf t ?r = inferType t >>= λ a -> quoteTC a >>= unify ?r
+  TypeOf : Term -> Term -> TC _
+  TypeOf t ?r = inferType t >>= unify ?r
+

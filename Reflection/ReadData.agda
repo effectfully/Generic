@@ -68,13 +68,6 @@ macro
   readData : Name -> Term -> TC _
   readData d ?r = quoteData d >>= unify ?r
 
-  uncoerce : ∀ {ι β} {I : Set ι} {D : Data (Desc I β)} {j} -> μ D j -> Term -> TC _
-  uncoerce {D = packData n a b Ds ns} d ?r =
-    quoteTC d >>= λ qd -> unify ?r ∘′ vis def (quote curryFoldMono)
-      $ euncurryBy b (vis def n (replicate (countEPi a) unknown))
-      ∷ qd
-      ∷ map (λ n -> con n []) (allToList ns)
-
   readCons : Name -> Term -> TC _
   readCons c ?r = inferType ?r >>= resType >>> λ
     { (def (quote μ) as) -> case explOnly as of λ
@@ -88,3 +81,10 @@ macro
          }
     ;  _                 -> throw "can't read"
     }
+
+  uncoerce : ∀ {ι β} {I : Set ι} {D : Data (Desc I β)} {j} -> μ D j -> Term -> TC _
+  uncoerce {D = packData n a b Ds ns} d ?r =
+    quoteTC d >>= λ qd -> unify ?r ∘′ vis def (quote curryFoldMono)
+      $ euncurryBy b (vis def n (replicate (countEPi a) unknown))
+      ∷ qd
+      ∷ map (λ n -> con n []) (allToList ns)

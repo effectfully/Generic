@@ -1,11 +1,13 @@
-module Generic.Lib.Fold where
+module Generic.Lib.Reflection.Fold where
 
 open import Generic.Lib.Intro
 open import Generic.Lib.Decidable
 open import Generic.Lib.Category
-open import Generic.Lib.Maybe
-open import Generic.Lib.List
-open import Generic.Lib.Reflection
+open import Generic.Lib.Data.Nat
+open import Generic.Lib.Data.String
+open import Generic.Lib.Data.Maybe
+open import Generic.Lib.Data.List
+open import Generic.Lib.Reflection.Core
 
 foldTypeOf : Data Type -> Type
 foldTypeOf (packData d a b cs ns) = let i = countPi a; j = countPi b; ab = appendType a b in
@@ -21,17 +23,17 @@ clausesOf : Data Type -> Name -> List Clause
 clausesOf (packData d a b cs ns) f = allToList $ mapAllInd (λ {a} n -> clauseOf n a) ns where
   k = length cs
 
-  tryHyp : (List String -> Term -> Term) -> ℕ -> Type -> Maybe Term
+  tryHyp : (ℕ -> List String -> Term -> Term) -> ℕ -> Type -> Maybe Term
   tryHyp rec n = go id where
     go : (List String -> List String) -> Type -> Maybe Term
     go l (rpi (earg a) (abs s b)) = go (l ∘ (s ∷_)) b
     go l (rpi  _       (abs s b)) = go l b
-    go l (def e _)                = let i = length (l []) in if d == e
-      then just $ rec (l []) (vis rvar (n + i) (map (λ v -> rvar v []) (downFrom i)))
+    go l (def e _)                = let p = length (l []) in if d == e
+      then just $ rec p (l []) (vis rvar (n + p) (map (λ v -> rvar v []) (downFrom p)))
       else nothing
     go l  _                       = nothing
 
-  fromPi : (List String -> Term -> Term) -> ℕ -> Type -> List Term
+  fromPi : (ℕ -> List String -> Term -> Term) -> ℕ -> Type -> List Term
   fromPi rec (suc n) (rpi (earg a) (abs s b)) =
     maybe id (rvar n []) (tryHyp rec n a) ∷ fromPi rec n b
   fromPi rec  n      (rpi  _       (abs s b)) = fromPi rec n b
@@ -40,8 +42,8 @@ clausesOf (packData d a b cs ns) f = allToList $ mapAllInd (λ {a} n -> clauseOf
   clauseOf : ℕ -> Type -> Name -> Clause
   clauseOf i c n = let es = epiToStrs c; j  = length es in
     clause (pvars ("P" ∷ unmap (λ n -> "f" ++ˢ showName n) ns) ∷ʳ earg (con n (pvars es)))
-      (vis rvar (k + j ∸ suc i) (fromPi (λ l t -> foldr elam
-        (vis def f (map (λ v -> rvar (v + length l) []) (downFromTo (suc k + j) j) ∷ʳ t)) l) j c))
+      (vis rvar (k + j ∸ suc i) (fromPi (λ p l t -> foldr elam
+        (vis def f (map (λ v -> rvar (v + p) []) (downFromTo (suc k + j) j) ∷ʳ t)) l) j c))
 
 deriveFoldTo : Name -> Name -> TC _
 deriveFoldTo f d =

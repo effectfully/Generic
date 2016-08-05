@@ -1,4 +1,4 @@
-module Generic.Lib.Maybe where
+module Generic.Lib.Data.Maybe where
 
 open import Data.Maybe.Base using (Maybe; just; nothing; maybe; from-just) public
 

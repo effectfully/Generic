@@ -3,7 +3,7 @@
 
 module Generic.Core where
 
-open import Generic.Prelude public
+open import Generic.Lib.Prelude public
 
 infix  4 _≤ℓ_
 infixr 5 _⇒_ _⊛_

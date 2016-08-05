@@ -3,8 +3,6 @@ module Generic.Lib.Intro where
 open import Level renaming (zero to lzero; suc to lsuc) public
 open import Function public
 open import Data.Bool.Base hiding (_≟_) public
-open import Data.Nat.Base as Nat hiding (_≟_; _⊔_; fold) public
-open import Data.String.Base renaming (toList to toListˢ; _++_ to _++ˢ_) public
 open import Data.Sum renaming (map to smap) public
 open import Data.Product renaming (map to pmap; zip to pzip) public
 

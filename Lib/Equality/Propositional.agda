@@ -1,4 +1,4 @@
-module Generic.Lib.Propositional where
+module Generic.Lib.Equality.Propositional where
 
 open import Level
 open import Relation.Binary
