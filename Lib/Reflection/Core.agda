@@ -34,6 +34,9 @@ pattern iarg  x = arg (arg-info impl rel) x
 pattern iiarg x = arg (arg-info inst rel) x
 {-# DISPLAY arg (arg-info inst relevant) = iiarg #-}
 
+pattern _‵→_ a b = rpi (earg a) (abs "_" b)
+pattern ivar i   = rvar i []
+
 vis : {A : Set} -> (A -> List (Arg Term) -> Term) -> A -> List Term -> Term
 vis k x = k x ∘ map earg
 
@@ -137,11 +140,6 @@ instance
     { _<$>_ = λ{ f (abs s x) -> abs s (f x) }
     }
 
-  -- DataFunctor : ∀ {α} -> RawFunctor {α} Data
-  -- DataFunctor = record
-  --   { _<$>_ = λ f d -> {!record d { consTypes = map f (consTypes d) }!}
-  --   }
-
   TCMonad : ∀ {α} -> RawMonad {α} TC
   TCMonad = record
     { return = returnTC
@@ -153,11 +151,6 @@ instance
 
   TCFunctor : ∀ {α} -> RawFunctor {α} TC
   TCFunctor = rawFunctor
-
-explOnly : List (Arg Term) -> List Term
-explOnly  []           = []
-explOnly (earg x ∷ xs) = x ∷ explOnly xs
-explOnly (_      ∷ xs) = explOnly xs
 
 keep : (ℕ -> ℕ) -> ℕ -> ℕ
 keep ι  0      = 0
@@ -196,6 +189,16 @@ unshiftBy n = ren (_∸ n)
 
 unshift′ : Term -> Term
 unshift′ t = elam "_" t · def (quote tt₀) []
+
+isSomeName : Name -> Term -> Bool
+isSomeName n (def m _) = n == m
+isSomeName n (con m _) = n == m
+isSomeName n  t        = false
+
+explOnly : List (Arg Term) -> List Term
+explOnly  []           = []
+explOnly (earg x ∷ xs) = x ∷ explOnly xs
+explOnly (_      ∷ xs) = explOnly xs
 
 countPi : Type -> ℕ
 countPi (rpi a (abs s b)) = 1 + countPi b
@@ -277,6 +280,9 @@ throw s = typeError (strErr s ∷ [])
 
 panic : ∀ {α} {A : Set α} -> String -> TC A
 panic s = throw $ "panic: " ++ˢ s
+
+defineSimpleFun : Name -> Term -> TC _
+defineSimpleFun n t = defineFun n (clause [] t ∷ [])
 
 getData : Name -> TC (Data Type)
 getData d = getType d >>= λ ab -> getDefinition d >>= λ

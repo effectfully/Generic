@@ -59,9 +59,9 @@ quoteData d =
 -- because otherwise nothing would work due to the #2118 issue.
 readDataTo : Name -> Name -> TC _
 readDataTo d′ d = getType d >>= declareDef (earg d′)
-               >> quoteData d >>= λ qd -> defineFun d′ (clause [] qd ∷ [])
+               >> quoteData d >>= λ qd -> defineSimpleFun d′ qd
 
--- This can be typed, but the inlined version should be much faster.
+-- This can be typed, but the inlined version should be faster.
 quoteCons : Name -> Term -> Term -> Term
 quoteCons n D ns = vis₂ def (quote cons) D ∘ vis₁ def (quote proj₂) ∘
                      vis₁ def (quote from-just) $ vis₂ def (quote lookupAllConst) (reify n) ns

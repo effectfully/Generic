@@ -26,6 +26,7 @@ record Eq {α} (A : Set α) : Set α where
 open Eq {{...}} public
 
 record _↦_ {α} (A B : Set α) : Set α where
+  constructor packInj
   field
     to      : A -> B
     from    : B -> A

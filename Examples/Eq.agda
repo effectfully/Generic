@@ -2,8 +2,7 @@
 
 module Generic.Examples.Eq where
 
-open import Generic.Core hiding (List; []; _∷_)
-open import Generic.Property.Eq
+open import Generic.Main hiding (List; []; _∷_)
 open import Generic.Data.Fin
 open import Generic.Data.List
 open import Generic.Data.Vec

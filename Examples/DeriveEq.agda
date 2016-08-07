@@ -1,7 +1,6 @@
 module Generic.Examples.DeriveEq where
 
 open import Generic.Main
-open import Generic.Property.Eq
 open import Generic.Function.Elim
 
 open import Data.Vec as Vec using (Vec) renaming ([] to []ᵥ; _∷_ to _∷ᵥ_)
@@ -14,18 +13,18 @@ module DeriveEqVec where
 
     unquoteDecl foldVec = deriveFoldTo foldVec (quote Vec)
 
-    VecInj : ∀ {n α} {A : Set α} -> Vec A n ↦ Vec′ A n
-    VecInj {A = A} = record { R } where
-      module R where
-        to : ∀ {n} -> Vec A n -> Vec′ A n
-        to = gcoerce foldVec
+    toVec′ : TypeOfBy toTypeOf Vec Vec′
+    toVec′ = gcoerce foldVec
 
-        from : ∀ {n} -> Vec′ A n -> Vec A n
-        from xs = uncoerce xs
+    fromVec′ : TypeOfBy fromTypeOf Vec Vec′
+    fromVec′ xs = uncoerce xs
 
-        from-to : ∀ {n} -> from ∘ to ≗ id {A = Vec A n}
-        from-to  []ᵥ      = refl
-        from-to (x ∷ᵥ xs) = cong (_ ∷ᵥ_) (from-to xs)
+    fromToVec′ : TypeOfBy (fromToTypeOf (quote fromVec′) (quote toVec′)) Vec Vec′
+
+    unquoteDef fromToVec′ = deriveFromToTo fromToVec′ (quote Vec)
+
+    VecInj : TypeOfBy injTypeOf Vec Vec′
+    VecInj = packInj toVec′ fromVec′ fromToVec′
 
   instance
     VecEq : ∀ {n α} {A : Set α} {{aEq : Eq A}} -> Eq (Vec A n)
@@ -53,7 +52,7 @@ module DeriveEqD where
   data D {α β} (A : Set α) (B : A -> Set β) : ∀ {n x} -> Vec (B x) n -> ℕ -> Set (α ⊔ β) where
     c₁ : ∀ {x n} (ys : Vec (B x) n) m -> A -> D A B ys m
     c₂ : ∀ {x n m y} {ys zs : Vec (B x) n}
-       -> D A B (y ∷ᵥ ys) 0 -> D A B ys (suc n) -> Vec A m -> D A B zs n
+       -> D A B (y ∷ᵥ ys) 0 -> Vec A m -> D A B ys (suc n) -> D A B zs n
 
   private
     D′ : TypeOf D
@@ -61,31 +60,18 @@ module DeriveEqD where
 
     unquoteDecl foldD = deriveFoldTo foldD (quote D)
 
-  --   module _ {α β} {A : Set α} {B : A -> Set β} where
-  --     DInj : ∀ {n m x} {ys : Vec (B x) n} -> D A B ys m ↦ D′ A B ys m
-  --     DInj = record
-  --       { to      = gcoerce foldD
-  --       ; from    = λ d -> uncoerce d
-  --       ; from-to = {!!}
-  --       }
+    toD′ : TypeOfBy toTypeOf D D′
+    toD′ = gcoerce foldD
 
-    module _ {α β} {A : Set α} {B : A -> Set β} where
-      DInj : ∀ {n m x} {ys : Vec (B x) n} -> D A B ys m ↦ D′ A B ys m
-      DInj = record { R } where
-        module R where
-          -- For tests.
-          -- to : ∀ {n m x} {ys : Vec (B x) n} -> D A B ys m -> D′ A B ys m
-          -- to = foldD (D′ A B) (readCons c₁) (readCons c₂)
+    fromD′ : TypeOfBy fromTypeOf D D′
+    fromD′ xs = uncoerce xs
 
-          to : ∀ {n m x} {ys : Vec (B x) n} -> D A B ys m -> D′ A B ys m
-          to = gcoerce foldD
+    fromToD′ : TypeOfBy (fromToTypeOf (quote fromD′) (quote toD′)) D D′
 
-          from : ∀ {n m x} {ys : Vec (B x) n} -> D′ A B ys m -> D A B ys m
-          from d = uncoerce d
+    unquoteDef fromToD′ = deriveFromToTo fromToD′ (quote D)
 
-          from-to : ∀ {n m x} {ys : Vec (B x) n} -> from ∘ to ≗ id {A = D A B ys m}
-          from-to (c₁ ys m x) = refl
-          from-to (c₂ d e xs) = cong₂ (λ d e -> c₂ d e xs) (from-to d) (from-to e)
+    DInj : TypeOfBy injTypeOf D D′
+    DInj = packInj toD′ fromD′ fromToD′
 
   -- `VecEq` is in scope.
   instance
