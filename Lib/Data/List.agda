@@ -8,6 +8,8 @@ open import Generic.Lib.Decidable
 open import Generic.Lib.Category
 open import Generic.Lib.Data.Nat
 open import Generic.Lib.Data.Maybe
+open import Generic.Lib.Data.Sum
+open import Generic.Lib.Data.Product
 
 import Data.List as List
 

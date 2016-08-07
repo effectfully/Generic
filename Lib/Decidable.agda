@@ -7,6 +7,8 @@ open import Relation.Binary using (Decidable) public
 open import Generic.Lib.Intro
 open import Generic.Lib.Equality.Propositional
 open import Generic.Lib.Equality.Heteroindexed
+open import Generic.Lib.Data.Sum
+open import Generic.Lib.Data.Product
 
 open import Relation.Nullary
 import Data.String as String

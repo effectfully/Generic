@@ -2,6 +2,7 @@ module Generic.Lib.Equality.Congn where
 
 open import Generic.Lib.Intro
 open import Generic.Lib.Equality.Propositional
+open import Generic.Lib.Data.Product
 open import Generic.Lib.Data.Nat
 open import Generic.Lib.Data.Pow
 open import Generic.Lib.Data.Sets
@@ -11,7 +12,7 @@ zip≡ {0}      tt       tt      = tt
 zip≡ {suc _} (x , xs) (y , ys) = (x ≡ y) , zip≡ xs ys
 
 congn : ∀ {β} {B : Set β} n {αs} {As : Sets {n} αs} {xs ys : HList As}
-      -> (f : Fold As B) -> Fold (zip≡ xs ys) (applyFold f xs ≡ applyFold f ys)
+      -> (f : FoldSets As B) -> FoldSets (zip≡ xs ys) (applyFoldSets f xs ≡ applyFoldSets f ys)
 congn  0      y      = refl
 congn (suc n) f refl = congn n (f _)
 

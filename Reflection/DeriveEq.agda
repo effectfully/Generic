@@ -1,7 +1,6 @@
 module Generic.Reflection.DeriveEq where
 
 open import Generic.Core
-open import Generic.Lib.Equality.Congn
 
 fromToClausesOf : Data Type -> Name -> List Clause
 fromToClausesOf (packData d a b cs ns) f = unmap (λ {a} -> clauseOf a) ns where

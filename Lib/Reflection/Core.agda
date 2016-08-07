@@ -11,6 +11,7 @@ open import Generic.Lib.Category
 open import Generic.Lib.Data.Nat
 open import Generic.Lib.Data.String
 open import Generic.Lib.Data.Maybe
+open import Generic.Lib.Data.Product
 open import Generic.Lib.Data.List
 
 import Data.Nat.Base as Nat
@@ -303,9 +304,15 @@ panic s = throw $ "panic: " ++ˢ s
 defineSimpleFun : Name -> Term -> TC _
 defineSimpleFun n t = defineFun n (clause [] t ∷ [])
 
+-- Able to normalize a Setω.
+normalize : Term -> TC Term
+normalize (rpi (arg v a) (abs s b)) =
+  (λ na -> rpi (arg v na) ∘ abs s) <$> normalize a <*> extendContext (arg v a) (normalize b)
+normalize  t                        = normalise t
+
 getData : Name -> TC (Data Type)
 getData d = getType d >>= λ ab -> getDefinition d >>= λ
-  { (data-type p cs) -> mapM (λ c -> _,_ c ∘ dropPi p <$> getType c) cs >>= λ mans ->
+  { (data-type p cs) -> mapM (λ c -> _,_ c ∘ dropPi p <$> (getType c >>= normalize)) cs >>= λ mans ->
        case takePi p ab ⊗ (dropPi p ab ⊗ (mapM (uncurry λ c ma -> flip _,_ c <$> ma) mans)) of λ
          {  nothing             -> panic "getData: data"
          ; (just (a , b , acs)) -> return ∘ uncurry (packData d a b) $ splitList acs
@@ -320,4 +327,3 @@ getData d = getType d >>= λ ab -> getDefinition d >>= λ
 macro
   TypeOf : Term -> Term -> TC _
   TypeOf t ?r = inferType t >>= unify ?r
-

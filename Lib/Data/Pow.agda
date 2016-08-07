@@ -2,7 +2,7 @@ module Generic.Lib.Data.Pow where
 
 open import Generic.Lib.Intro
 open import Generic.Lib.Data.Nat
--- open import Generic.Lib.Category
+open import Generic.Lib.Data.Product
 
 infixl 6 _^_
 
@@ -33,9 +33,3 @@ mapPow f = foldPow (_ ^_) (_,_ ∘ f) tt
 replicatePow : ∀ {α} {A : Set α} n -> A -> A ^ n
 replicatePow  0      x = tt
 replicatePow (suc n) x = x , replicatePow n x
-
--- instance
---   PowFunctor : ∀ {n α} -> RawFunctor {α} (_^ n)
---   PowFunctor = record
---     { _<$>_ = mapPow
---     }
