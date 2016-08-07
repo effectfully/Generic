@@ -27,7 +27,7 @@ foldClausesOf (packData d a b cs ns) f = allToList $ mapAllInd (λ {a} n -> clau
     go l (rpi (earg a) (abs s b)) = go (l ∘ (s ∷_)) b
     go l (rpi  _       (abs s b)) = go l b
     go l (def e _)                = let p = length (l []) in if d == e
-      then just $ rec p (l []) (vis rvar (n + p) (map ivar(downFrom p)))
+      then just $ rec p (l []) (vis rvar (n + p) (map ivar (downFrom p)))
       else nothing
     go l  _                       = nothing
 

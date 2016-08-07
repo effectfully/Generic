@@ -275,6 +275,25 @@ mutual
   mapNameSort f n (lit l) = lit l
   mapNameSort f n unknown = unknown
 
+pack : List Term -> Term
+pack = foldr₁ (vis₂ con (quote _,_)) (def (quote tt₀) [])
+
+curryBy : Type -> Term -> Term
+curryBy = go 0 where
+  go : ℕ -> Type -> Term -> Term
+  go n (rpi (arg (arg-info v r) a) (abs s b)) t = rlam v ∘ abs s $ go (suc n) b t
+  go n  _                                     t =
+    shiftBy n t · pack (map (λ m -> rvar m []) $ downFrom n)
+
+euncurryBy : Type -> Term -> Term
+euncurryBy a f = elam "x" $ def (quote id) (earg (shift f) ∷ go a (ivar 0)) where
+  go : Term -> Term -> List (Arg Term)
+  go (rpi (earg a)    (abs s b@(rpi _ _))) p = earg (vis₁ def (quote proj₁) p)
+                                             ∷ go b (vis₁ def (quote proj₂) p)
+  go (rpi  _          (abs s b@(rpi _ _))) p = go b (vis₁ def (quote proj₂) p)
+  go (rpi (earg a) _)                      x = earg x ∷ []
+  go  _                                    t = []
+
 throw : ∀ {α} {A : Set α} -> String -> TC A
 throw s = typeError (strErr s ∷ [])
 

@@ -30,8 +30,8 @@ fromTypeOf : Data Type -> Name -> Type
 fromTypeOf (packData d a b cs ns) d′ = let ab = appendType a b; k = countPi ab in
   appendType (implPi ab) $ def d′ (piToArgs k ab) ‵→ def d (piToArgs (suc k) ab)
 
-fromToTypeOf : Name -> Name -> Data Type -> Name -> Type
-fromToTypeOf from to (packData d a b cs ns) d′ = let ab = appendType a b; k = countPi ab in
+fromToTypeOf : Data Type -> Name -> Name -> Name -> Type
+fromToTypeOf (packData d a b cs ns) d′ to from = let ab = appendType a b; k = countPi ab in
   appendType (implPi ab) ∘ rpi (earg (def d (piToArgs k ab))) ∘ abs "x" $
     vis₂ def (quote _≡_) (vis₁ def from (vis₁ def to (ivar 0))) (ivar 0)
 
@@ -43,5 +43,11 @@ macro
   TypeOfBy : (Data Type -> Name -> Type) -> Name -> Name -> Term -> TC _
   TypeOfBy k d d′ ?r = getData d >>= λ D -> unify ?r $ k D d′
 
-deriveFromToTo : Name -> Name -> TC _
-deriveFromToTo f d = getData d >>= λ D -> defineFun f (fromToClausesOf D f)
+deriveEqTo : Name -> Name -> Name -> Name -> Name -> TC _
+deriveEqTo f d d′ to from = 
+  getData d >>= λ D ->
+  freshName (showName from ++ˢ "-" ++ˢ showName to) >>= λ from-to ->
+  declareDef (earg from-to) (fromToTypeOf D d′ to from) >>
+  defineFun from-to (fromToClausesOf D from-to) >>
+  defineSimpleFun f (vis₁ def (quote viaInj) $
+    vis₃ con (quote packInj) (def to []) (def from []) (def from-to []))
