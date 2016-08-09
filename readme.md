@@ -210,7 +210,7 @@ test : reflect xs ≡ xs′
 test = refl
 ```
 
-Having decidable equality on `B` we can derive decidable equality on `A` if there is an injection `A ↦ B`. To construct an injection we need two functions `to : A -> B`, `from : B -> A` and a proof `from-to : from ∘ to ≗ id`. `to` and `from` are `gcoerce` and `guncoerce` from the above and `from-to` is another generic function (defined via reflection again, placed in [`Reflection/DeriveEq.agda`](Reflection/DeriveEq.agda): `fromToClausesOf` generated clauses for it) which uses universe polymorphic n-ary [`cong`](https://github.com/effectfully/Generic/blob/master/Lib/Equality/Congn.agda) under the hood.
+Having decidable equality on `B` we can derive decidable equality on `A` if there is an injection `A ↦ B`. To construct an injection we need two functions `to : A -> B`, `from : B -> A` and a proof `from-to : from ∘ to ≗ id`. `to` and `from` are `gcoerce` and `guncoerce` from the above and `from-to` is another generic function (defined via reflection again, placed in [`Reflection/DeriveEq.agda`](Reflection/DeriveEq.agda): `fromToClausesOf` generates clauses for it) which uses universe polymorphic n-ary [`cong`](https://github.com/effectfully/Generic/blob/master/Lib/Equality/Congn.agda) under the hood.
 
 There are also generic `elim` in [`Function/Elim.agda`](Function/Elim.agda) (the idea is described in [Deriving eliminators of described data types](http://effectfully.blogspot.com/2016/06/deriving-eliminators-of-described-data.html) and `lookup` in [`Function/Lookup.agda`](Function/Lookup.agda) (broken currently).
 
