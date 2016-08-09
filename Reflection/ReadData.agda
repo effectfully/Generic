@@ -54,16 +54,14 @@ macro
   readData : Name -> Term -> TC _
   readData d ?r = quoteData d >>= unify ?r
 
-  gcoerce : Term -> TC _
-  gcoerce ?r = inferType ?r >>= onFinalMu λ{ D@(packData d _ b _ _) ->
-      freshName "fold ++ showName d" >>= λ fd ->
-      deriveFoldTo fd d >>
+  gcoerce : Name -> Term -> TC _
+  gcoerce fd ?r = inferType ?r >>= onFinalMu λ{ D@(packData _ _ b _ _) ->
       quoteTC (μ D) >>= λ μD ->
       traverseAll quoteTC (allCons D) >>= λ cs′ ->
       unify ?r $ vis def fd (curryBy b μD ∷ allToList cs′)
     }
 
   guncoerce : ∀ {ι β} {I : Set ι} {D : Data (Desc I β)} {j} -> μ D j -> Term -> TC _
-  guncoerce {D = packData d a b Ds ns} e ?r =
+  guncoerce {D = packData d a b cs ns} e ?r =
     quoteTC e >>= λ qe -> unify ?r ∘ vis def (quote curryFoldMono) $
       euncurryBy b (vis def d (replicate (countEPis a) unknown)) ∷ qe ∷ unmap (λ n -> con n []) ns

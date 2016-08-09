@@ -2,6 +2,7 @@ module Generic.Reflection.DeriveEq where
 
 open import Generic.Core
 open import Generic.Function.FoldMono
+open import Generic.Reflection.ReadData
 
 fromToClausesOf : Data Type -> Name -> List Clause
 fromToClausesOf (packData d a b cs ns) f = unmap (λ {a} -> clauseOf a) ns where
@@ -41,22 +42,28 @@ injTypeOf (packData d a b cs ns) d′ = let ab = appendType a b; k = countPis ab
   appendType (implPis ab) $
     vis₂ def (quote _↦_) (def d (pisToArgVars k ab)) (def d′ (pisToArgVars k ab))
 
-macro
-  TypeOfBy : (Data Type -> Name -> Type) -> Name -> Name -> Term -> TC _
-  TypeOfBy k d d′ ?r = getData d >>= λ D -> unify ?r $ k D d′
-
 uncoerce : Data Type -> Term
 uncoerce (packData d a b cs ns) = elam "x" ∘ vis def (quote curryFoldMono) $
   euncurryBy b (vis def d (replicate (countEPis a) unknown)) ∷ ivar 0 ∷ unmap (λ n -> con n []) ns
 
-deriveEqTo : Name -> Name -> Name -> Name -> TC _
-deriveEqTo f d d′ to = 
+deriveEqTo : Name -> Name -> TC _
+deriveEqTo f d =
+  getType d >>= λ a ->
   getData d >>= λ D ->
-  freshName "from" >>= λ from ->
+  freshName (showName d ++ˢ "′") >>= λ d′ ->
+  declareDef (earg d′) a >>
+  defineSimpleFun d′ (vis₁ def (quote readData) (def d [])) >>
+  deriveFold d >>= λ fd ->
+  freshName ("to" ++ˢ showName d′) >>= λ to ->
+  declareDef (earg to) (toTypeOf D d′) >>
+  defineSimpleFun to (vis₁ def (quote gcoerce) (def fd [])) >>
+  freshName ("from" ++ˢ showName d′) >>= λ from ->
   declareDef (earg from) (fromTypeOf D d′) >>
   defineSimpleFun from (uncoerce D) >>
   freshName (showName from ++ˢ "-" ++ˢ showName to) >>= λ from-to ->
   declareDef (earg from-to) (fromToTypeOf D d′ to from) >>
   defineFun from-to (fromToClausesOf D from-to) >>
-  defineSimpleFun f (vis₁ def (quote viaInj) $
-    vis₃ con (quote packInj) (def to []) (def from []) (def from-to []))
+  freshName (showName d ++ˢ "Inj") >>= λ dInj ->
+  declareDef (earg dInj) (injTypeOf D d′) >>
+  defineSimpleFun dInj (vis₃ con (quote packInj) (def to []) (def from []) (def from-to [])) >>
+  defineSimpleFun f (vis₁ def (quote viaInj) (def dInj []))

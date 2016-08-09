@@ -9,34 +9,13 @@ module DeriveEqStar where
   open import Relation.Binary
   open import Data.Star hiding (_>>=_)
 
-  private
-    Star′ : TypeOf Star
-    Star′ = readData Star
-
-    toStar′ : TypeOfBy toTypeOf Star Star′
-    toStar′ = gcoerce
-
   instance StarEq : ∀ {i t} {I : Set i} {T : Rel I t} {i j}
                       {{iEq : Eq I}} {{tEq : ∀ {i j} -> Eq (T i j)}} -> Eq (Star T i j)
-  unquoteDef StarEq = deriveEqTo StarEq (quote Star) (quote Star′) (quote toStar′)
+  unquoteDef StarEq = deriveEqTo StarEq (quote Star)
 
 module DeriveEqVec where
-  private
-    Vec′ : TypeOf Vec
-    Vec′ = readData Vec
-
-    toVec′ : TypeOfBy toTypeOf Vec Vec′
-    toVec′ = gcoerce
-
   instance VecEq : ∀ {n α} {A : Set α} {{aEq : Eq A}} -> Eq (Vec A n)
-  unquoteDef VecEq = deriveEqTo VecEq (quote Vec) (quote Vec′) (quote toVec′)
-
-module TestVec where
-  xs : Vec ℕ 3
-  xs = 2 ∷ᵥ 4 ∷ᵥ 1 ∷ᵥ []ᵥ
-
-  test : xs ≟ xs ≡ yes refl
-  test = refl
+  unquoteDef VecEq = deriveEqTo VecEq (quote Vec)
 
 module DeriveEqD where
   data D {α β} (A : Set α) (B : A -> Set β) : ∀ {n x} -> Vec (B x) n -> ℕ -> Set (α ⊔ β) where
@@ -44,13 +23,7 @@ module DeriveEqD where
     c₂ : ∀ {x n m y} {ys zs : Vec (B x) n}
        -> D A B (y ∷ᵥ ys) 0 -> Vec A m -> D A B ys (suc n) -> D A B zs n
 
-  private
-    D′ : TypeOf D
-    D′ = readData D
-
-    toD′ : TypeOfBy toTypeOf D D′
-    toD′ = gcoerce
-
+  -- `VecEq` is in scope.
   instance DEq : ∀ {α β} {A : Set α} {B : A -> Set β} {n m x} {ys : Vec (B x) n}
                    {{aEq : Eq A}} {{bEq : ∀ {x} -> Eq (B x)}} -> Eq (D A B ys m)
-  unquoteDef DEq = deriveEqTo DEq (quote D) (quote D′) (quote toD′)
+  unquoteDef DEq = deriveEqTo DEq (quote D)

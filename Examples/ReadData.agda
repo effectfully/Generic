@@ -9,8 +9,10 @@ data D {α β} (A : Set α) (B : ℕ -> Set β) : ∀ {n} -> B n -> List ℕ -> 
 D′ : TypeOf D
 D′ = readData D
 
+unquoteDecl foldD = deriveFoldTo foldD (quote D)
+
 inj : ∀ {α β} {A : Set α} {B : ℕ -> Set β} {n xs} {y : B n} -> D A B y xs -> D′ A B y xs
-inj = gcoerce
+inj = gcoerce foldD
 
 outj : ∀ {α β} {A : Set α} {B : ℕ -> Set β} {n xs} {y : B n} -> D′ A B y xs -> D A B y xs
 outj d = guncoerce d

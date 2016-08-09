@@ -49,7 +49,6 @@ deriveFoldTo f d =
   declareDef (earg f) (foldTypeOf D) >>
   defineFun f (foldClausesOf D f)
 
--- This doesn't seem to define the most general fold for some reason.
 deriveFold : Name -> TC Name
 deriveFold d =
   freshName ("fold" ++ˢ showName d) >>= λ fd ->
