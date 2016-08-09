@@ -1,4 +1,4 @@
-module Generic.Data.Lift where
+module Generic.Examples.Data.Lift where
 
 open import Generic.Main as Main hiding (Lift; lift; lower)
 

@@ -1,4 +1,4 @@
-module Generic.Data.Maybe where
+module Generic.Examples.Data.Maybe where
 
 open import Generic.Main as Main hiding (Maybe; just; nothing)
 

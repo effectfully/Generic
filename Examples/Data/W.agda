@@ -1,4 +1,4 @@
-module Generic.Data.W where
+module Generic.Examples.Data.W where
 
 open import Generic.Main
 

@@ -1,4 +1,4 @@
-module Generic.Data.Vec where
+module Generic.Examples.Data.Vec where
 
 open import Generic.Main
 

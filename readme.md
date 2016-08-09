@@ -1,6 +1,40 @@
 # Generic
 
-It's a library for doing generic programming in Agda. Descriptions are defined as follows:
+It's a library for doing generic programming in Agda.
+
+# A quick taste
+
+Deriving decidable equality for vectors:
+
+```
+open import Data.Vec using (Vec) renaming ([] to []ᵥ; _∷_ to _∷ᵥ_)
+
+instance VecEq : ∀ {n α} {A : Set α} {{aEq : Eq A}} -> Eq (Vec A n)
+unquoteDef VecEq = deriveEqTo VecEq (quote Vec)
+
+xs : Vec ℕ 3
+xs = 2 ∷ᵥ 4 ∷ᵥ 1 ∷ᵥ []ᵥ
+
+test₁ : xs ≟ xs ≡ yes refl
+test₁ = refl
+
+test₂ : xs ≟ (2 ∷ᵥ 4 ∷ᵥ 2 ∷ᵥ []ᵥ) ≡ no _
+test₂ = refl
+```
+
+Same for `Data.Star`:
+
+```
+open import Data.Star
+
+instance StarEq : ∀ {i t} {I : Set i} {T : Rel I t} {i j}
+                    {{iEq : Eq I}} {{tEq : ∀ {i j} -> Eq (T i j)}} -> Eq (Star T i j)
+unquoteDef StarEq = deriveEqTo StarEq (quote Star)
+```
+
+# Internally
+
+Descriptions of constructors are defined as follows:
 
 ```
 mutual
@@ -12,22 +46,27 @@ mutual
     π   : ∀ {α}
         -> (q : α ≤ℓ β) -> Visibility -> Binder α β _ (cong (λ αβ -> ι ⊔ lsuc αβ) q) I -> Desc I β
     _⊛_ : Desc I β -> Desc I β -> Desc I β
+```
 
-record Data {ι} (I : Set ι) β : Set (ι ⊔ lsuc β) where
+Constructors are interpreted in the way described in [Descriptions](http://effectfully.blogspot.com/2016/04/descriptions.html) (in the `CompProp` module). That `Coerce` stuff is elaborated in [Emulating cumulativity in Agda](http://effectfully.blogspot.com/2016/07/cumu.html).
+
+A description of a data type is a list of named constructors
+
+```
+record Data {α} (A : Set α) : Set α where
   no-eta-equality
   constructor packData
   field
-    dataName     : Name
-    paramsType   : Type
-    indicesType  : Type
-    constructors : List (Desc I β)
-    consNames    : All (λ _ -> Name) constructors
-open Data public
+    dataName  : Name
+    parsTele  : Type
+    indsTele  : Type
+    consTypes : List A
+    consNames : All (const Name) consTypes
 ```
 
-I.e. an encoded data typed is a list of named constructors. It also has a name and is packaged with telescopes of types of parameters and indices. `Name` and `Type` come from the `Reflection` module. That `Coerce` stuff is elaborated in [Emulating cumulativity in Agda](http://effectfully.blogspot.ru/2016/07/cumu.html). Constructors are interpreted in the way described in [Descriptions](http://effectfully.blogspot.ru/2016/04/descriptions.html) (in the `CompProp` module).
+For regular data types `A` is instantiated to `Type`, for described data types `A` is instantiated to `Desc I β` for some `I` and `β`. Descriptions also store the name of an original data type and telescopes of types of parameters and indices. `Name` and `Type` come from the `Reflection` module.
 
-There is some reflection machinery that allows to parse regular Agda data types into their described counterparts. An example from the [`Examples/ReadData.agda`](Examples/ReadData.agda) module:
+There is a reflection machinery that allows to parse regular Agda data types into their described counterparts. An example from the [`Examples/ReadData.agda`](Examples/ReadData.agda) module:
 
 ```
 data D {α β} (A : Set α) (B : ℕ -> Set β) : ∀ {n} -> B n -> List ℕ -> Set (α ⊔ β) where
@@ -55,10 +94,21 @@ There is a generic procedure that allows to coerce elements of described data ty
 
 ```
 outj : ∀ {α β} {A : Set α} {B : ℕ -> Set β} {n xs} {y : B n} -> D′ A B y xs -> D A B y xs
-outj d = uncoerce d
+outj d = guncoerce d
 ```
 
 Internally it's a bit of reflection sugar on top of a generic fold defined on described data types (the [`Function/FoldMono.agda`](Function/FoldMono.agda) module).
+
+It's possible to coerce the other way around:
+
+```
+unquoteDecl foldD = deriveFoldTo foldD (quote D)
+
+inj : ∀ {α β} {A : Set α} {B : ℕ -> Set β} {n xs} {y : B n} -> D A B y xs -> D′ A B y xs
+inj = gcoerce foldD
+```
+
+`foldD` is a derived (via reflection) indexed fold (like `foldr` on `Vec`) on `D`. The procedure that derives indexed folds for regular data types is in the [`Lib/Reflection/Fold.agda`](Lib/Reflection/Fold.agda) module.
 
 `D′` computes to the following term:
 
@@ -124,9 +174,9 @@ test : xs ≟ xs ≡ yes refl
 test = refl
 ```
 
-Equality for `Vec`s, `List`s and `Fin`s is derived automatically.
+Equality for desribed `Vec`s, `List`s and `Fin`s is derived automatically.
 
-The [`Property/Reify.agda`](Property/Reify.agda) module implements coercion from described data types to `Term`s. Since stored names of described constructors are taken from actual constructors, reified elements of described data types are actually quoted elements of regular data types and hence the former can be converted to the latter (like with `uncoerce`, but deeply and accepts only canonical forms):
+The [`Property/Reify.agda`](Property/Reify.agda) module implements coercion from described data types to `Term`s. Since stored names of described constructors are taken from actual constructors, reified elements of described data types are actually quoted elements of regular data types and hence the former can be converted to the latter (like with `guncoerce`, but deeply and accepts only canonical forms):
 
 ```
 record Reify {α} (A : Set α) : Set α where
@@ -142,8 +192,8 @@ instance
                 {{reD : All (ExtendReify ∘ proj₂) D}} -> Reify (μ D j)
   DescReify = ...
 
-open import Generic.Data.Fin
-open import Generic.Data.Vec
+open import Generic.Examples.Data.Fin
+open import Generic.Examples.Data.Vec
 
 open import Data.Fin renaming (Fin to StdFin)
 open import Data.Vec renaming (Vec to StdVec)
@@ -158,8 +208,24 @@ test : reflect xs ≡ xs′
 test = refl
 ```
 
-There are also generic `elim` in [`Function/Elim.agda`](Function/Elim.agda) (the idea is described in [Deriving eliminators of described data types](http://effectfully.blogspot.ru/2016/06/deriving-eliminators-of-described-data.html) and `lookup` in [`Function/Lookup.agda`](Function/Lookup.agda) (broken currently).
+Having decidable equality on `B` we can derive decidable equality on `A` if there is an injection `A ↦ B`. To construct an injection we need two functions `to : A -> B`, `from : B -> A` and a proof `from-to : from ∘ to ≗ id`. `to` and `from` are `gcoerce` and `guncoerce` from the above and `from-to` is another generic function (defined via reflection again, placed in [`Reflection/DeriveEq.agda`](Reflection/DeriveEq.agda): `fromToClausesOf` generated clauses for it) which uses universe polymorphic n-ary [`cong`](https://github.com/effectfully/Generic/blob/master/Lib/Equality/Congn.agda) under the hood.
 
-The plan is to define decidable equality over regular data types using reflection and the current decidable equality over described data types. There is a problem however: it's hard to derive eliminators for regular data types (I can't handle implicits properly, see e.g. [this](https://github.com/agda/agda/issues/2118) issue). Currently, a data type and its constructors can be read automatically as well as coercion from a described data type to its regular counterpart, but automatic coercion in the other direction is missing, because of the mentioned issue with implicits (which also doesn't allow to derive data types via `unquoteDecl`). And we also need a proof that the latter coercion is an injection to get decidable equality. So deriving equality is quite verbose now, see the [`Examples/DeriveEq.agda`](Examples/DeriveEq.agda) module for two examples.
+There are also generic `elim` in [`Function/Elim.agda`](Function/Elim.agda) (the idea is described in [Deriving eliminators of described data types](http://effectfully.blogspot.com/2016/06/deriving-eliminators-of-described-data.html) and `lookup` in [`Function/Lookup.agda`](Function/Lookup.agda) (broken currently).
 
-Ornaments may or may not appear later (in the way described in [Unbiased ornaments](http://effectfully.blogspot.com/2016/07/unbiased-ornaments.html)).
+Ornaments may or may not appear later (in the way described in [Unbiased ornaments](http://effectfully.blogspot.com/2016/07/unbiased-ornaments.html)). I don't find them very vital currently.
+
+# Limitations
+
+- No inductive-inductive or inductive-recursive data types. The latter [can be done](https://github.com/effectfully/random-stuff/blob/master/Desc/IRDesc.agda) at the cost of complicating the encoding.
+
+- No irrelevance. I'll maybe try to fix this latter.
+
+- No coinduction.
+
+- You can't describe a non-strictly-positive data type. Yes, I think it's a limitation.
+
+- Handling of records is not tested currently.
+
+- No forcing of indices. [`Lift`](Examples/Data/Lift.agda) can be described, though.
+
+- Reflection-related code begs for refactoring.
