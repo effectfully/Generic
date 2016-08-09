@@ -32,6 +32,8 @@ instance StarEq : ∀ {i t} {I : Set i} {T : Rel I t} {i j}
 unquoteDef StarEq = deriveEqTo StarEq (quote Star)
 ```
 
+(For this to type check you need the recent development version of Agda (as of 09.08.16))
+
 # Internally
 
 Descriptions of constructors are defined as follows:
