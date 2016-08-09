@@ -3,9 +3,9 @@
 module Generic.Examples.Eq where
 
 open import Generic.Main hiding (List; []; _∷_)
-open import Generic.Data.Fin
-open import Generic.Data.List
-open import Generic.Data.Vec
+open import Generic.Examples.Data.Fin
+open import Generic.Examples.Data.List
+open import Generic.Examples.Data.Vec
 
 xs : Vec (List (Fin 4)) 3
 xs = (fsuc fzero ∷ fzero ∷ [])
