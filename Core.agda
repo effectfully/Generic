@@ -131,6 +131,9 @@ cons {D = D} D₀ p = go D λ e ->
       goᵇ {q = q} {v = v} (coerce (A , D)) k =
         coerce′ q $ lam v λ x -> go (D x) (k ∘ coerce′ q ∘ _,_ x)
 
+allCons : ∀ {ι β} {I : Set ι} -> (D : Data (Desc I β)) -> All (Cons (μ D)) (consTypes D)
+allCons D = allIn _ (cons D)
+
 node-inj : ∀ {i β} {I : Set i} {D : Data (Desc I β)} {j} {e₁ e₂ : Node D D j}
          -> node {D = D} e₁ ≡ node e₂ -> e₁ ≡ e₂
 node-inj refl = refl

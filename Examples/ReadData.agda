@@ -9,16 +9,11 @@ data D {α β} (A : Set α) (B : ℕ -> Set β) : ∀ {n} -> B n -> List ℕ -> 
 D′ : TypeOf D
 D′ = readData D
 
-unquoteDecl foldD = deriveFoldTo foldD (quote D)
-
--- inj : ∀ {α β} {A : Set α} {B : ℕ -> Set β} {n xs} {y : B n} -> D A B y xs -> D′ A B y xs
--- inj = foldD (D′ _ _) (readCons c₁) (readCons c₂)
-
 inj : ∀ {α β} {A : Set α} {B : ℕ -> Set β} {n xs} {y : B n} -> D A B y xs -> D′ A B y xs
-inj = gcoerce foldD
+inj = gcoerce
 
 outj : ∀ {α β} {A : Set α} {B : ℕ -> Set β} {n xs} {y : B n} -> D′ A B y xs -> D A B y xs
-outj d = uncoerce d
+outj d = guncoerce d
 
 pattern c₁′ {n} y xs x = #₀  (n , y , xs , x , lrefl)
 pattern c₂′ {y} r ys   = !#₁ (y , r , ys , lrefl)

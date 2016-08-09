@@ -69,6 +69,10 @@ allToList : ∀ {α β} {A : Set α} {B : Set β} {xs : List A} -> All (const B)
 allToList {xs = []}      tt      = []
 allToList {xs = x ∷ xs} (y , ys) = y ∷ allToList ys
 
+allIn : ∀ {α β} {A : Set α} {B : A -> Set β} -> ∀ xs -> (∀ {x} -> x ∈ xs -> B x) -> All B xs
+allIn  []      g = tt
+allIn (x ∷ xs) g = g (phere xs) , allIn xs (g ∘ there xs)
+
 mapAll : ∀ {α β γ} {A : Set α} {B : A -> Set β} {C : A -> Set γ} {xs : List A}
        -> (∀ {x} -> B x -> C x) -> All B xs -> All C xs
 mapAll {xs = []}     g  tt      = tt
