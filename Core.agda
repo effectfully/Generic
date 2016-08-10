@@ -100,6 +100,10 @@ mutual
 
 module _ {ι β} {I : Set ι} (D : Data (Desc I β)) where
   mutual
+    -- record μ j : Set β where
+    --   constructor node
+    --   field childs : Node D j
+
     data μ j : Set β where
       node : Node D j -> μ j
 

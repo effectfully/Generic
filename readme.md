@@ -214,8 +214,6 @@ Having decidable equality on `B` we can derive decidable equality on `A` if ther
 
 There are also generic `elim` in [`Function/Elim.agda`](Function/Elim.agda) (the idea is described in [Deriving eliminators of described data types](http://effectfully.blogspot.com/2016/06/deriving-eliminators-of-described-data.html) and `lookup` in [`Function/Lookup.agda`](Function/Lookup.agda) (broken currently).
 
-Ornaments may or may not appear later (in the way described in [Unbiased ornaments](http://effectfully.blogspot.com/2016/07/unbiased-ornaments.html)). I don't find them very vital currently.
-
 # Limitations
 
 - No inductive-inductive or inductive-recursive data types. The latter [can be done](https://github.com/effectfully/random-stuff/blob/master/Desc/IRDesc.agda) at the cost of complicating the encoding.
@@ -226,7 +224,9 @@ Ornaments may or may not appear later (in the way described in [Unbiased ornamen
 
 - You can't describe a non-strictly-positive data type. Yes, I think it's a limitation.
 
-- Handling of records is not tested currently.
+- Records can be described (see [`Examples/Data/Product.agda`](Examples/Data/Product.agda`)), but η-laws don't hold for them, because constructors contain `lift refl : tt ≡ tt` and `(p q : tt ≡ tt) -> p ≡ q` doesn't hold definitionally. `μ` is also a `data` rather than `record` (records confuse the termination checker, though, there are `{-# TERMINATING #-}` pragmas anyway), so this breaks η-expansion too.
+
+- Ornaments may or may not appear later (in the way described in [Unbiased ornaments](http://effectfully.blogspot.com/2016/07/unbiased-ornaments.html)). I don't find them very vital currently.
 
 - No forcing of indices. [`Lift`](Examples/Data/Lift.agda) can be described, though.
 
