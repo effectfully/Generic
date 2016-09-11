@@ -14,22 +14,22 @@ curryAll {xs = x ∷ xs} g = curryAll ∘ curry g
 mutual
   Hyp : ∀ {ι β} {I : Set ι} -> (I -> Set β) -> (D : Desc I β) -> Set β
   Hyp C (var i)   = C i
-  Hyp C (π q v D) = Hypᵇ C D q v
+  Hyp C (π i q D) = Hypᵇ i C D q
   Hyp C (D ⊛ E)   = Hyp C D × Hyp C E
 
-  Hypᵇ : ∀ {α ι β γ q} {I : Set ι}
-       -> (I -> Set β) -> Binder α β γ q I -> α ≤ℓ β -> Visibility -> Set β
-  Hypᵇ C (coerce (A , D)) q v = Coerce′ q $ Pi v A λ x -> Hyp C (D x)
+  Hypᵇ : ∀ {α ι β γ q} {I : Set ι} i
+       -> (I -> Set β) -> Binder α β γ i q I -> α ≤ℓ β -> Set β
+  Hypᵇ i C (coerce (A , D)) q = Coerce′ q $ Pi i A λ x -> Hyp C (D x)
 
 mutual
   Fold : ∀ {ι β} {I : Set ι} -> (I -> Set β) -> (D : Desc I β) -> Set β
   Fold C (var i)   = C i
-  Fold C (π q v D) = Foldᵇ C D q v 
+  Fold C (π i q D) = Foldᵇ i C D q 
   Fold C (D ⊛ E)   = Hyp C D -> Fold C E
 
-  Foldᵇ : ∀ {α ι β γ q} {I : Set ι}
-        -> (I -> Set β) -> Binder α β γ q I -> α ≤ℓ β -> Visibility -> Set β
-  Foldᵇ C (coerce (A , D)) q v = Coerce′ q $ Pi v A λ x -> Fold C (D x)
+  Foldᵇ : ∀ {α ι β γ q} {I : Set ι} i
+        -> (I -> Set β) -> Binder α β γ i q I -> α ≤ℓ β -> Set β
+  Foldᵇ i C (coerce (A , D)) q = Coerce′ q $ Pi i A λ x -> Fold C (D x)
 
 module _ {ι β} {I : Set ι} {D₀ : Data (Desc I β)} (C : I -> Set β) where
   module _ (hs : All (Fold C) (consTypes D₀)) where
@@ -37,22 +37,23 @@ module _ {ι β} {I : Set ι} {D₀ : Data (Desc I β)} (C : I -> Set β) where
     mutual
       foldHyp : (D : Desc I β) -> ⟦ D ⟧ (μ D₀) -> Hyp C D
       foldHyp (var i)    d      = foldMono d
-      foldHyp (π q v D)  f      = foldHypᵇ D f
+      foldHyp (π i q D)  f      = foldHypᵇ i D f
       foldHyp (D ⊛ E)   (x , y) = foldHyp D x , foldHyp E y
 
-      foldHypᵇ : ∀ {α γ q q′ v} -> (D : Binder α β γ q′ I) -> ⟦ D ⟧ᵇ q v (μ D₀) -> Hypᵇ C D q v
-      foldHypᵇ {q = q} {v = v} (coerce (A , D)) f =
-        coerce′ q $ lam v λ x -> foldHyp (D x) (app v (uncoerce′ q f) x)
+      foldHypᵇ : ∀ {α γ q q′} i
+               -> (D : Binder α β γ i q′ I) -> ⟦ i / D ⟧ᵇ q (μ D₀) -> Hypᵇ i C D q
+      foldHypᵇ {q = q} i (coerce (A , D)) f =
+        coerce′ q $ lamPi i λ x -> foldHyp (D x) (appPi i (uncoerce′ q f) x)
 
       foldExtend : ∀ {j} -> (D : Desc I β) -> Fold C D -> Extend D (μ D₀) j -> C j
       foldExtend (var i)   z  lrefl  = z
-      foldExtend (π q v D) h  p      = foldExtendᵇ D h p 
+      foldExtend (π i q D) h  p      = foldExtendᵇ i D h p 
       foldExtend (D ⊛ E)   h (d , e) = foldExtend E (h (foldHyp D d)) e
 
-      foldExtendᵇ : ∀ {α γ q q′ v j}
-                  -> (D : Binder α β γ q′ I) -> Foldᵇ C D q v -> Extendᵇ D q (μ D₀) j -> C j
-      foldExtendᵇ {q = q} {v = v} (coerce (A , D)) h p with p | inspectUncoerce′ q p
-      ... | _ | (x , e) , refl = foldExtend (D x) (app v (uncoerce′ q h) x) e
+      foldExtendᵇ : ∀ {α γ q q′ j} i
+                  -> (D : Binder α β γ i q′ I) -> Foldᵇ i C D q -> Extendᵇ i D q (μ D₀) j -> C j
+      foldExtendᵇ {q = q} i (coerce (A , D)) h p with p | inspectUncoerce′ q p
+      ... | _ | (x , e) , refl = foldExtend (D x) (appPi i (uncoerce′ q h) x) e
 
       foldAny : ∀ {j} (Ds : List (Desc I β)) d a b ns
               -> All (Fold C) Ds -> Node D₀ (packData d a b Ds ns) j -> C j

@@ -1,6 +1,6 @@
 # Generic
 
-It's a library for doing generic programming in Agda.
+It's a library for doing generic programming in Agda. The repository is under reconstruction currently.
 
 # A quick taste
 

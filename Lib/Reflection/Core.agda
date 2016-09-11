@@ -2,10 +2,14 @@ module Generic.Lib.Reflection.Core where
 
 open import Reflection
   renaming (visible to expl; hidden to impl; instance′ to inst;
-    relevant to rel; irrelevant to irr; pi to rpi; lam to rlam; var to rvar)
-  hiding (_≟_) public
+    relevant to rel; irrelevant to irr; pi to absPi; lam to absLam; def to appDef)
+  hiding (var; con; meta; _≟_) public
+open Term    using () renaming (var to appVar; con to appCon; meta to appMeta) public
+open Pattern using () renaming (var to patVar; con to patCon) public
+open Literal using () renaming (meta to litMeta) public
 
 open import Generic.Lib.Intro
+open import Generic.Lib.Equality.Propositional
 open import Generic.Lib.Decidable
 open import Generic.Lib.Category
 open import Generic.Lib.Data.Nat
@@ -16,6 +20,7 @@ open import Generic.Lib.Data.List
 
 import Data.Nat.Base as Nat
 
+infixr 5 _‵→_
 infixl 3 _·_
 
 named : String -> String
@@ -29,47 +34,70 @@ record Reify {α} (A : Set α) : Set α where
     reflect = unify ∘ reify
 open Reify {{...}} public
 
-pattern earg  x = arg (arg-info expl rel) x
-pattern iarg  x = arg (arg-info impl rel) x
-pattern iiarg x = arg (arg-info inst rel) x
+pattern pureVar  n = appVar  n []
+pattern pureCon  c = appCon  c []
+pattern pureDef  f = appDef  f []
+pattern pureMeta m = appMeta m []
 
-{-# DISPLAY arg (arg-info expl rel) = earg  #-}
-{-# DISPLAY arg (arg-info impl rel) = iarg  #-}
-{-# DISPLAY arg (arg-info inst rel) = iiarg #-}
+{-# DISPLAY appVar  i [] = pureVar  i #-}
+{-# DISPLAY appCon  c [] = pureCon  c #-}
+{-# DISPLAY appDef  f [] = pureDef  f #-}
+{-# DISPLAY appMeta m [] = pureMeta m #-}
 
-pattern elam  s t = rlam expl (abs s t)
-pattern ilam  s t = rlam impl (abs s t)
-pattern iilam s t = rlam inst (abs s t)
+pattern explArg r x = arg (arg-info expl r) x
+pattern implArg r x = arg (arg-info impl r) x
+pattern instArg r x = arg (arg-info inst r) x
 
-{-# DISPLAY rlam expl (abs s t) = elam  s t #-}
-{-# DISPLAY rlam impl (abs s t) = ilam  s t #-}
-{-# DISPLAY rlam inst (abs s t) = iilam s t #-}
+{-# DISPLAY arg (arg-info expl r) = explArg r #-}
+{-# DISPLAY arg (arg-info impl r) = implArg r #-}
+{-# DISPLAY arg (arg-info inst r) = instArg r #-}
 
-pattern api a s b = rpi a (abs s b)
+pattern explRelArg x = explArg rel x
+pattern implRelArg x = implArg rel x
+pattern instRelArg x = instArg rel x
 
-{-# DISPLAY rpi a (abs s b) = api a s b #-}
+{-# DISPLAY explArg rel x = explRelArg x #-}
+{-# DISPLAY implArg rel x = implRelArg x #-}
+{-# DISPLAY instArg rel x = instRelArg x #-}
 
-pattern aepi  a s b = api (earg  a) s b
-pattern aipi  a s b = api (iarg  a) s b
-pattern aiipi a s b = api (iiarg a) s b
+pattern pi s a b = absPi a (abs s b)
 
--- "Pattern not allowed in DISPLAY pragma"
--- {-# DISPLAY rpi (earg  a) (abs s b) = repi  a s b #-}
--- {-# DISPLAY rpi (iarg  a) (abs s b) = ripi  a s b #-}
--- {-# DISPLAY rpi (iiarg a) (abs s b) = riipi a s b #-}
+{-# DISPLAY absPi a (abs s b) = pi s a b #-}
 
-pattern _‵→_ a b = rpi (earg a) (abs "_" b)
+pattern explPi r s a b = pi s (explArg r a) b
+pattern implPi r s a b = pi s (implArg r a) b
+pattern instPi r s a b = pi s (instArg r a) b
 
--- "Pattern not allowed in DISPLAY pragma"
--- {-# DISPLAY rpi (earg a) (abs "_" b) = _‵→_ a b #-}
+{-# DISPLAY pi (explArg r a) s b = explPi r s a b #-}
+{-# DISPLAY pi (implArg r a) s b = implPi r s a b #-}
+{-# DISPLAY pi (instArg r a) s b = instPi r s a b #-}
 
-pattern ivar i = rvar i []
+pattern explRelPi s a b = explPi rel a s b
+pattern implRelPi s a b = implPi rel a s b
+pattern instRelPi s a b = instPi rel a s b
 
--- "Ambiguous constructor rvar"
--- {-# DISPLAY rvar i [] = ivar i #-}
+{-# DISPLAY explPi rel a s b = explRelPi s a b #-}
+{-# DISPLAY implPi rel a s b = implRelPi s a b #-}
+{-# DISPLAY instPi rel a s b = instRelPi s a b #-}
+
+pattern lam v s t = absLam v (abs s t)
+
+{-# DISPLAY absLam v (abs s t) = lam v s t #-}
+
+pattern explLam s t = lam expl s t
+pattern implLam s t = lam impl s t
+pattern instLam s t = lam inst s t
+
+{-# DISPLAY lam expl s t = explLam s t #-}
+{-# DISPLAY lam impl s t = implLam s t #-}
+{-# DISPLAY lam inst s t = instLam s t #-}
+
+pattern _‵→_ a b = pi "_" (explRelArg a) b
+
+{-# DISPLAY pi "_" (explRelArg a) b = a ‵→ b #-}
 
 vis : {A : Set} -> (A -> List (Arg Term) -> Term) -> A -> List Term -> Term
-vis k x = k x ∘ map earg
+vis k x = k x ∘ map explRelArg
 
 vis₀ : {A : Set} -> (A -> List (Arg Term) -> Term) -> A -> Term
 vis₀ k x = vis k x []
@@ -91,7 +119,11 @@ vis₅ : {A : Set}
 vis₅ k f x₁ x₂ x₃ x₄ x₅ = vis k f (x₁ ∷ x₂ ∷ x₃ ∷ x₄ ∷ x₅ ∷ [])
 
 _·_ : Term -> Term -> Term
-f · x = vis₂ def (quote id) f x
+f · x = vis₂ appDef (quote _$_) f x
+
+isRelevant : Relevance -> Bool
+isRelevant rel = true
+isRelevant irr = false
 
 argInfo : ∀ {A} -> Arg A -> _
 argInfo (arg i x) = i
@@ -100,8 +132,8 @@ argVal : ∀ {A} -> Arg A -> A
 argVal (arg i x) = x
 
 unExpl : ∀ {A} -> Arg A -> Maybe A
-unExpl (earg t) = just t
-unExpl  _       = nothing
+unExpl (explArg r x) = just x
+unExpl  _            = nothing
 
 absName : ∀ {A} -> Abs A -> String
 absName (abs s x) = s
@@ -110,7 +142,38 @@ absVal : ∀ {A} -> Abs A -> A
 absVal (abs s x) = x
 
 pvars : List String -> List (Arg Pattern)
-pvars = map (earg ∘ rvar ∘ named)
+pvars = map (explRelArg ∘ patVar ∘ named)
+
+mutual
+  <_>_ : ∀ {α} -> Relevance -> Set α -> Set α
+  <_>_ = flip RelValue
+
+  data RelValue {α} (A : Set α) : Relevance -> Set α where
+    relv :  A -> < rel > A
+    irrv : .A -> < irr > A
+
+unrelv : ∀ {α} {A : Set α} -> < rel > A -> A
+unrelv (relv x) = x
+
+.unirrv : ∀ {α} {A : Set α} -> < irr > A -> A
+unirrv (irrv x) = irrelevant x
+
+<_>_~>_ : ∀ {α β} -> Relevance -> Set α -> Set β -> Set (α ⊔ β)
+< rel > A ~> B =  A -> B
+< irr > A ~> B = .A -> B
+
+lamᵣ : ∀ {r α β} {A : Set α} {B : Set β} -> (< r > A -> B) -> < r > A ~> B
+lamᵣ {rel} f = λ x -> f (relv x)
+lamᵣ {irr} f = λ x -> f (irrv x)
+
+-- The laziness is intentional.
+appᵣ : ∀ {r α β} {A : Set α} {B : Set β} -> (< r > A ~> B) -> < r > A -> B
+appᵣ {rel} f rx = f (unrelv rx)
+appᵣ {irr} f rx = f (unirrv rx)
+
+RelEq : ∀ {α} -> Relevance -> Set α -> Set α
+RelEq rel A = Eq A
+RelEq irr A = ⊤
 
 record Data {α} (A : Set α) : Set α where
   no-eta-equality
@@ -126,6 +189,17 @@ open Data public
 instance
   NameEq : Eq Name
   NameEq = viaBase _≟-Name_
+
+  EqRelValue : ∀ {α r} {A : Set α} {{aEq : RelEq r A}} -> Eq (< r > A)
+  EqRelValue {A = A} {{aEq}} = record
+    { _≟_ = go
+    } where
+        relv-inj : {x y : A} -> relv x ≡ relv y -> x ≡ y
+        relv-inj refl = refl
+
+        go : ∀ {r} {{aEq : RelEq r A}} -> IsSet (< r > A)
+        go (relv x) (relv y) = dcong relv relv-inj (x ≟ y)
+        go (irrv x) (irrv y) = yes refl
 
   TermReify : Reify Term
   TermReify = record
@@ -146,20 +220,33 @@ instance
         }
     }
 
+  RelevanceReify : Reify Relevance
+  RelevanceReify = record
+    { reify = λ
+        { rel -> quoteTerm rel
+        ; irr -> quoteTerm irr
+        }
+    }
+
+  ArgInfoReify : Reify Arg-info
+  ArgInfoReify = record
+    { reify = λ{ (arg-info v r) -> vis₂ appCon (quote arg-info) (reify v) (reify r) }
+    }
+
   ProdReify : ∀ {α β} {A : Set α} {B : A -> Set β}
                 {{aReify : Reify A}} {{bReify : ∀ {x} -> Reify (B x)}} -> Reify (Σ A B)
   ProdReify = record
-    { reify = uncurry λ x y -> vis₂ con (quote _,_) (reify x) (reify y)
-    }                
+    { reify = uncurry λ x y -> vis₂ appCon (quote _,_) (reify x) (reify y)
+    }
 
   ℕReify : Reify ℕ
   ℕReify = record
-    { reify = Nat.fold (quoteTerm 0) (vis₁ con (quote suc))
+    { reify = Nat.fold (quoteTerm 0) (vis₁ appCon (quote suc))
     }
 
   ListReify : ∀ {α} {A : Set α} {{aReify : Reify A}} -> Reify (List A)
   ListReify = record
-    { reify = foldr (vis₂ con (quote _∷_) ∘ reify) (quoteTerm (List Term ∋ []))
+    { reify = foldr (vis₂ appCon (quote _∷_) ∘ reify) (quoteTerm (List Term ∋ []))
     }  
 
   AllReify : ∀ {α β} {A : Set α} {B : A -> Set β} {xs} {{bReify : ∀ {x} -> Reify (B x)}}
@@ -168,8 +255,8 @@ instance
     { reify = go _
     } where
         go : ∀ xs -> All B xs -> Term
-        go  []       tt      = def (quote tt₀) []
-        go (x ∷ xs) (y , ys) = vis₂ con (quote _,_) (reify {{bReify}} y) (go xs ys)
+        go  []       tt      = pureDef (quote tt₀)
+        go (x ∷ xs) (y , ys) = vis₂ appCon (quote _,_) (reify {{bReify}} y) (go xs ys)
 
   ArgFunctor : RawFunctor Arg
   ArgFunctor = record
@@ -200,15 +287,15 @@ keep ι (suc n) = suc (ι n)
 {-# TERMINATING #-}
 mutual
   ren : (ℕ -> ℕ) -> Term -> Term
-  ren ι (rvar v xs)     = rvar (ι v) (rens ι xs)
-  ren ι (con c xs)      = con c (rens ι xs)
-  ren ι (def f xs)      = def f (rens ι xs)
-  ren ι (rlam v t)      = rlam v (ren (keep ι) <$> t)
+  ren ι (appVar v xs)   = appVar (ι v) (rens ι xs)
+  ren ι (appCon c xs)   = appCon c (rens ι xs)
+  ren ι (appDef f xs)   = appDef f (rens ι xs)
+  ren ι (lam v s t)     = lam v s (ren (keep ι) t)
   ren ι (pat-lam cs xs) = undefined where postulate undefined : _
-  ren ι (rpi a b)       = rpi (ren ι <$> a) (ren (keep ι) <$> b)
+  ren ι (pi s a b)      = pi s (ren ι <$> a) (ren (keep ι) b)
   ren ι (sort s)        = sort (renSort ι s)
   ren ι (lit l)         = lit l
-  ren ι (meta x xs)     = meta x (rens ι xs)
+  ren ι (appMeta x xs)  = appMeta x (rens ι xs)
   ren ι  unknown        = unknown
 
   rens : (ℕ -> ℕ) -> List (Arg Term) -> List (Arg Term)
@@ -229,94 +316,92 @@ unshiftBy : ℕ -> Term -> Term
 unshiftBy n = ren (_∸ n)
 
 unshift′ : Term -> Term
-unshift′ t = elam "_" t · def (quote tt₀) []
+unshift′ t = explLam "_" t · appDef (quote tt₀) []
 
 isSomeName : Name -> Term -> Bool
-isSomeName n (def m _) = n == m
-isSomeName n (con m _) = n == m
-isSomeName n  t        = false
+isSomeName n (appDef m _) = n == m
+isSomeName n (appCon m _) = n == m
+isSomeName n  t           = false
 
 explsOnly : List (Arg Term) -> List Term
 explsOnly = mapMaybe unExpl
 
 takePis : ℕ -> Type -> Maybe Type
-takePis  0       a          = just unknown
-takePis (suc n) (api a s b) = rpi a ∘ abs s <$> takePis n b
-takePis  _       _          = nothing
+takePis  0       a         = just unknown
+takePis (suc n) (pi s a b) = pi s a <$> takePis n b
+takePis  _       _         = nothing
 
 dropPis : ℕ -> Type -> Maybe Type
-dropPis  0       a          = just a
-dropPis (suc n) (api a s b) = dropPis n b
-dropPis  _       _          = nothing
+dropPis  0       a         = just a
+dropPis (suc n) (pi s a b) = dropPis n b
+dropPis  _       _         = nothing
 
 appendType : Type -> Type -> Type
-appendType (api a s b) c = api a s (appendType b c)
-appendType  _          c = c
-
-elamsBy : Type -> Term -> Term
-elamsBy (aepi a s b) t = elam s (elamsBy b t)
-elamsBy (api  _ s b) t = elamsBy b t
-elamsBy  _           t = t
+appendType (pi s a b) c = pi s a (appendType b c)
+appendType  b         c = c
 
 resType : Type -> Type
 resType = go 0 where
   go : ℕ -> Type -> Type
-  go n (api a s b) = go (suc n) b
-  go n  a          = unshiftBy n a
+  go n (pi s a b) = go (suc n) b
+  go n  b         = unshiftBy n b
 
-implPis : Type -> Type
-implPis (aepi  a        s b) = aipi a        s (implPis b)
-implPis (api  (arg i a) s b) = api (arg i a) s (implPis b)
-implPis  b                   = b
+explLamsBy : Type -> Term -> Term
+explLamsBy (explPi r s a b) t = explLam s (explLamsBy b t)
+explLamsBy (pi       s a b) t = explLamsBy b t
+explLamsBy  b               t = t
+
+implicitize : Type -> Type
+implicitize (explPi r s a b) = implPi r s a (implicitize b)
+implicitize (pi       s a b) = pi       s a (implicitize b)
+implicitize  b               = b
 
 leadImpls : Type -> List (Abs Term)
-leadImpls (rpi (iarg a) (abs s b)) = abs s a ∷ leadImpls b
-leadImpls  a                       = []
+leadImpls (implPi r s a b) = abs s a ∷ leadImpls b
+leadImpls  b               = []
 
 pisToAbsArgTypes : Type -> List (Abs (Arg Type))
-pisToAbsArgTypes (api a s b) = abs s a ∷ pisToAbsArgTypes b
-pisToAbsArgTypes  b          = []
+pisToAbsArgTypes (pi s a b) = abs s a ∷ pisToAbsArgTypes b
+pisToAbsArgTypes  b         = []
 
-episToAbsTypes : Type -> List (Abs Type)
-episToAbsTypes (aepi a s b) = abs s a ∷ episToAbsTypes b
-episToAbsTypes (api  _ s b) = episToAbsTypes b
-episToAbsTypes  b           = []
+explPisToAbsTypes : Type -> List (Abs Type)
+explPisToAbsTypes (explPi r s a b) = abs s a ∷ explPisToAbsTypes b
+explPisToAbsTypes (pi       s a b) = explPisToAbsTypes b
+explPisToAbsTypes  b               = []
 
-episToNames : Type -> List String
-episToNames = map absName ∘ episToAbsTypes
+explPisToNames : Type -> List String
+explPisToNames = map absName ∘ explPisToAbsTypes
 
 countPis : Type -> ℕ
 countPis = length ∘ pisToAbsArgTypes
 
-countEPis : Type -> ℕ
-countEPis = length ∘ episToAbsTypes
+countExplPis : Type -> ℕ
+countExplPis = length ∘ explPisToAbsTypes
 
 pisToAbsArgVars : ℕ -> Type -> List (Abs (Arg Term))
-pisToAbsArgVars (suc n) (api (arg i a) s b) = abs s (arg i (ivar n)) ∷ pisToAbsArgVars n b
-pisToAbsArgVars  n       b                  = []
+pisToAbsArgVars (suc n) (pi s (arg i a) b) = abs s (arg i (pureVar n)) ∷ pisToAbsArgVars n b
+pisToAbsArgVars  n       b                 = []
 
 pisToArgVars : ℕ -> Type -> List (Arg Term)
 pisToArgVars = map absVal % ∘ pisToAbsArgVars
 
-episToAbsVars : ℕ -> Type -> List (Abs Term)
-episToAbsVars (suc n) (aepi a s b) = abs s (ivar n) ∷ episToAbsVars n b
-episToAbsVars (suc n) (api  _ s b) = episToAbsVars n b
-episToAbsVars  n       b           = []
+explPisToAbsVars : ℕ -> Type -> List (Abs Term)
+explPisToAbsVars (suc n) (explPi r s a b) = abs s (pureVar n) ∷ explPisToAbsVars n b
+explPisToAbsVars (suc n) (pi       s a b) = explPisToAbsVars n b
+explPisToAbsVars  n       b               = []
 
 {-# TERMINATING #-}
 mutual
   mapName : (ℕ -> List (Arg Term) -> Term) -> Name -> Term -> Term
-  mapName f n (rvar v xs)     = rvar v (mapNames f n xs)
-  mapName f n (con m xs)      =
-    (if n == m then f 0 else Term.con m) (mapNames f n xs)
-  mapName f n (def m xs)      =
-    (if n == m then f 0 else Term.def m) (mapNames f n xs)
-  mapName f n (rlam v t)      = rlam v (mapName (f ∘ suc) n <$> t)
+  mapName f n (appVar v xs)   = appVar v (mapNames f n xs)
+  mapName f n (appCon m xs)   = (if n == m then f 0 else appCon m) (mapNames f n xs)
+  mapName f n (appDef m xs)   = (if n == m then f 0 else appDef m) (mapNames f n xs)
+  mapName f n (lam v s t)     = lam v s (mapName (f ∘ suc) n t)
   mapName f n (pat-lam cs xs) = undefined where postulate undefined : _
-  mapName f n (rpi a b)       = rpi (mapName f n <$> a) (mapName (f ∘ suc) n <$> b)
+  mapName f n (pi s a b)      = pi s (mapName f n <$> a) (mapName (f ∘ suc) n b)
   mapName f n (sort s)        = sort (mapNameSort f n s)
   mapName f n (lit l)         = lit l
-  mapName f n (meta x xs)     = meta x (mapNames f n xs)
+  mapName f n (appMeta x xs)  = appMeta x (mapNames f n xs)
   mapName f n  unknown        = unknown
 
   mapNames : (ℕ -> List (Arg Term) -> Term) -> Name -> List (Arg Term) -> List (Arg Term)
@@ -328,21 +413,22 @@ mutual
   mapNameSort f n unknown = unknown
 
 toTuple : List Term -> Term
-toTuple = foldr₁ (vis₂ con (quote _,_)) (def (quote tt₀) [])
+toTuple = foldr₁ (vis₂ appCon (quote _,_)) (pureDef (quote tt₀))
 
 curryBy : Type -> Term -> Term
 curryBy = go 0 where
   go : ℕ -> Type -> Term -> Term
-  go n (api (arg (arg-info v r) a) s b) t = rlam v ∘ abs s $ go (suc n) b t
-  go n  _                               t = shiftBy n t · toTuple (map ivar (downFrom n))
+  go n (pi s (arg (arg-info v r) a) b) t = lam v s $ go (suc n) b t
+  go n  _                              t = shiftBy n t · toTuple (map pureVar (downFrom n))
 
 euncurryBy : Type -> Term -> Term
-euncurryBy a f = elam "x" $ def (quote id) (earg (shift f) ∷ go a (ivar 0)) where
+euncurryBy a f = explLam "x" $ appDef (quote id) (explArg rel (shift f) ∷ go a (pureVar 0)) where
   go : Term -> Term -> List (Arg Term)
-  go (aepi a s b@(rpi _ _)) p = earg (vis₁ def (quote proj₁) p) ∷ go b (vis₁ def (quote proj₂) p)
-  go (api  _ s b@(rpi _ _)) p = go b (vis₁ def (quote proj₂) p)
-  go (aepi a _ _)           x = earg x ∷ []
-  go  _                     t = []
+  go (explPi r s a b@(pi _ _ _)) p =
+    explArg r (vis₁ appDef (quote proj₁) p) ∷ go b (vis₁ appDef (quote proj₂) p)
+  go (pi       s a b@(pi _ _ _)) p = go b (vis₁ appDef (quote proj₂) p)
+  go (explPi r s a b)            x = explArg r x ∷ []
+  go  _                          t = []
 
 throw : ∀ {α} {A : Set α} -> String -> TC A
 throw s = typeError (strErr s ∷ [])
@@ -355,9 +441,9 @@ defineSimpleFun n t = defineFun n (clause [] t ∷ [])
 
 -- Able to normalize a Setω.
 normalize : Term -> TC Term
-normalize (api (arg v a) s b) =
-  (λ na -> api (arg v na) s) <$> normalize a <*> extendContext (arg v a) (normalize b)
-normalize  t                  = normalise t
+normalize (pi s (arg i a) b) =
+  (pi s ∘ arg i) <$> normalize a <*> extendContext (arg i a) (normalize b)
+normalize  t                 = normalise t
 
 getData : Name -> TC (Data Type)
 getData d = getType d >>= λ ab -> getDefinition d >>= λ

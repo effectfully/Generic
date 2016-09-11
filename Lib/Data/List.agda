@@ -1,6 +1,7 @@
 module Generic.Lib.Data.List where
 
-open import Data.List.Base public
+open import Data.List.Base hiding ([]) public
+open List public
 
 open import Generic.Lib.Intro
 open import Generic.Lib.Equality.Propositional

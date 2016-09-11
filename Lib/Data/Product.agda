@@ -5,6 +5,8 @@ open import Data.Product renaming (map to pmap; zip to pzip) public
 open import Generic.Lib.Intro
 open import Generic.Lib.Category
 
+infixl 4 _,ᵢ_
+
 first : ∀ {α β γ} {A : Set α} {B : Set β} {C : A -> Set γ}
       -> (∀ x -> C x) -> (p : A × B) -> C (proj₁ p) × B
 first f (x , y) = f x , y
@@ -25,6 +27,19 @@ secondF : ∀ {α β} {A : Set α} {B : A -> Set β} {C : A -> Set α}
         -> (∀ {x} -> B x -> F (C x)) -> Σ A B -> F (Σ A C)
 secondF g (x , y) = _,_ x <$> g y
 
+record Σᵢ {α β} (A : Set α) (B : .A -> Set β) : Set (α ⊔ β) where
+  constructor _,ᵢ_
+  field
+    .iproj₁ : A
+    iproj₂  : B iproj₁
+open Σᵢ public
+
+∃ᵢ : ∀ {α β} {A : Set α} -> (.A -> Set β) -> Set (α ⊔ β)
+∃ᵢ = Σᵢ _
+
 instance
   ,-inst : ∀ {α β} {A : Set α} {B : A -> Set β} {{x : A}} {{y : B x}} -> Σ A B
   ,-inst {{x}} {{y}} = x , y
+
+  ,ᵢ-inst : ∀ {α β} {A : Set α} {B : .A -> Set β} {{x : A}} {{y : B x}} -> Σᵢ A B
+  ,ᵢ-inst {{x}} {{y}} = x ,ᵢ y

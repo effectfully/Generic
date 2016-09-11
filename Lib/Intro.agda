@@ -22,3 +22,7 @@ _% = _∘_
 _>>>_ : ∀ {α β γ} {A : Set α} {B : A -> Set β} {C : ∀ {x} -> B x -> Set γ}
       -> (f : ∀ x -> B x) -> (∀ {x} -> (y : B x) -> C y) -> ∀ x -> C (f x)
 (f >>> g) x = g (f x)
+
+module _ {α} {A : Set α} .(x : A) where
+  .irrelevant : A
+  irrelevant = x

@@ -10,43 +10,56 @@ open import Generic.Lib.Data.List
 open import Generic.Lib.Reflection.Core
 
 foldTypeOf : Data Type -> Type
-foldTypeOf (packData d a b cs ns) = let i = countPis a; j = countPis b; ab = appendType a b in
-  appendType (implPis ab) ∘ rpi (iarg (quoteTerm Level)) ∘ abs "π" ∘
-    rpi (earg ∘ appendType (shiftBy (j + 1) b) ∘ sort ∘ set $ ivar j) ∘ abs "P" $
-      foldr (λ c r -> mapName (λ p -> rvar p ∘ drop i) d (shiftBy (j + 2) c) ‵→ shift r)
-            (def d (pisToArgVars (i + j + 2) ab) ‵→ rvar 1 (pisToArgVars (j + 3) b))
-             cs
+foldTypeOf (packData d a b cs ns) = appendType iab ∘ pi "π" π ∘ pi "P" P $ cs ʰ→ from ‵→ to where
+  infixr 5 _ʰ→_
+  i    = countPis a
+  j    = countPis b
+  ab   = appendType a b
+  iab  = implicitize ab
+  π    = implRelArg (quoteTerm Level)
+  P    = explRelArg ∘ appendType (shiftBy (suc j) b) ∘ sort ∘ set $ pureVar j
+  hyp  = mapName (λ p -> appVar p ∘ drop i) d ∘ shiftBy (2 + j)
+  _ʰ→_ = flip $ foldr (λ c r -> hyp c ‵→ shift r)
+  from = appDef d (pisToArgVars (2 + i + j) ab)
+  to   = appVar 1 (pisToArgVars (3 + j) b)
 
 foldClausesOf : Data Type -> Name -> List Clause
 foldClausesOf (packData d a b cs ns) f = allToList $ mapAllInd (λ {a} n -> clauseOf n a) ns where
-  k = length cs
-
-  tryHyp : (ℕ -> List String -> Term -> Term) -> ℕ -> Type -> Maybe Term
-  tryHyp rec n = go id where
-    go : (List String -> List String) -> Type -> Maybe Term
-    go l (rpi (earg a) (abs s b)) = go (l ∘ (s ∷_)) b
-    go l (rpi  _       (abs s b)) = go l b
-    go l (def e _)                = let p = length (l []) in if d == e
-      then just $ rec p (l []) (vis rvar (n + p) (map ivar (downFrom p)))
-      else nothing
-    go l  _                       = nothing
-
-  fromPis : (ℕ -> List String -> Term -> Term) -> ℕ -> Type -> List Term
-  fromPis rec (suc n) (rpi (earg a) (abs s b)) =
-    maybe id (ivar n) (tryHyp rec n a) ∷ fromPis rec n b
-  fromPis rec  n      (rpi  _       (abs s b)) = fromPis rec n b
-  fromPis rec  n       b                       = []
-
   clauseOf : ℕ -> Type -> Name -> Clause
-  clauseOf i c n = let es = episToNames c; j = length es in
-    clause (pvars ("P" ∷ unmap (λ n -> "f" ++ˢ showName n) ns) ∷ʳ earg (con n (pvars es)))
-      (vis rvar (k + j ∸ suc i) (fromPis (λ p l t -> foldr elam
-        (vis def f (map (λ v -> ivar (v + p)) (downFromTo (suc k + j) j) ∷ʳ t)) l) j c))
+  clauseOf i c n = clause lhs rhs where
+    k    = length cs
+    args = explPisToNames c
+    j    = length args
+    lhs  = pvars ("P" ∷ unmap (λ n -> "f" ++ˢ showName n) ns)
+         ∷ʳ explRelArg (patCon n (pvars args))
+
+    tryHyp : ℕ -> ℕ -> Type -> Maybe Term
+    tryHyp m l (explPi r s a b) = explLam s <$> tryHyp (suc m) l b
+    tryHyp m l (pi       s a b) = tryHyp m l b
+    tryHyp m l (appDef e _)     = if d == e
+      then just ∘′ vis appDef f $
+        map (λ i -> pureVar (m + i)) (downFromTo (suc k + j) j)
+          ∷ʳ vis appVar (m + l) (map pureVar (downFrom m))
+      else nothing
+    tryHyp m l  b               = nothing
+
+    hyps : ℕ -> Type -> List Term
+    hyps (suc l) (explPi r s a b) = maybe id (pureVar l) (tryHyp 0 l a) ∷ hyps l b
+    hyps  l      (pi       s a b) = hyps l b
+    hyps  l       b               = []
+
+    rhs = vis appVar (k + j ∸ suc i) (hyps j c)
+
+    -- i = 1: f
+    -- j = 3: x t r
+    -- k = 2: g f
+    --      5 4 3       2 1 0    3 2       4 3 1     1 0         6 5  2 1 0
+    -- fold P g f (cons x t r) = f x (fold g f t) (λ y u -> fold g f (r y u))
 
 deriveFoldTo : Name -> Name -> TC _
 deriveFoldTo f d =
   getData d >>= λ D ->
-  declareDef (earg f) (foldTypeOf D) >>
+  declareDef (explRelArg f) (foldTypeOf D) >>
   defineFun f (foldClausesOf D f)
 
 deriveFold : Name -> TC Name
@@ -58,4 +71,4 @@ deriveFold d =
 -- This drops leading implicit arguments, because `fd` is "applied" to the empty spine.
 macro
   fold : Name -> Term -> TC _
-  fold d ?r = deriveFold d >>= λ fd -> unify ?r (def fd [])
+  fold d ?r = deriveFold d >>= λ fd -> unify ?r (pureDef fd)

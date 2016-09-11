@@ -1,7 +1,6 @@
 module Generic.Examples.DeriveEq where
 
 open import Generic.Main
-open import Generic.Function.Elim
 
 open import Data.Vec using (Vec) renaming ([] to []ᵥ; _∷_ to _∷ᵥ_)
 
@@ -28,7 +27,7 @@ module DeriveEqVec where
 
 module DeriveEqD where
   data D {α β} (A : Set α) (B : A -> Set β) : ∀ {n x} -> Vec (B x) n -> ℕ -> Set (α ⊔ β) where
-    c₁ : ∀ {x n} (ys : Vec (B x) n) m -> A -> D A B ys m
+    c₁ : ∀ {x n} (ys : Vec (B x) n) m -> .A -> D A B ys m
     c₂ : ∀ {x n m y} {ys zs : Vec (B x) n}
        -> D A B (y ∷ᵥ ys) 0 -> Vec A m -> D A B ys (suc n) -> D A B zs n
 
@@ -36,3 +35,20 @@ module DeriveEqD where
   instance DEq : ∀ {α β} {A : Set α} {B : A -> Set β} {n m x} {ys : Vec (B x) n}
                    {{aEq : Eq A}} {{bEq : ∀ {x} -> Eq (B x)}} -> Eq (D A B ys m)
   unquoteDef DEq = deriveEqTo DEq (quote D)
+
+-- -- Seems like the problem is that irrelevance and meta-variables resolution do not play well.
+-- module DeriveEqE where
+--   data E {α} (A : Set α) : ∀ {n} -> .(Vec A n) -> Set α where
+--     c₁ : ∀ {n} -> .(xs : Vec A n) -> E A xs
+
+--   instance EEq : ∀ {α n} {A : Set α} .{xs : Vec A n} -> Eq (E A xs)
+--   unquoteDef EEq = deriveEqTo EEq (quote E)
+--   -- Variable xs is declared irrelevant, so it cannot be used here
+--   -- when checking that the expression xs has type _B_76 A _ n₁ _ n₁
+
+module DeriveEqF where
+  data F {α} (A : Set α) : Set α where
+    c₁ : ∀ {n} -> .(Vec A n) -> F A
+
+  instance FEq : ∀ {α} {A : Set α} -> Eq (F A)
+  unquoteDef FEq = deriveEqTo FEq (quote F)

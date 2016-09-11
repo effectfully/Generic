@@ -3,45 +3,58 @@ module Generic.Reflection.ReadData where
 open import Generic.Core
 open import Generic.Function.FoldMono
 
-‵π : Visibility -> String -> Term -> Term -> Term 
-‵π v s a b = vis₃ con (quote π) unknown (reify v) $
-               vis₁ con (quote coerce) (vis₂ con (quote _,_) a (elam s b))
+‵π : Arg-info -> String -> Term -> Term -> Term 
+‵π i s a b =
+  vis₃ appCon (quote π) (reify i) unknown ∘
+    vis₁ appCon (quote coerce) ∘ vis₂ appCon (quote _,_) a $
+      appDef (quote appᵣ) (implRelArg (reify (relevance i)) ∷ explRelArg (explLam s b) ∷ [])
 
 quoteHyp : Name -> ℕ -> Type -> Maybe (Maybe Term)
-quoteHyp d p   (rpi (arg (arg-info v _) a) (abs s b)) =
-  quoteHyp d p a >>= maybe (const nothing) (fmap (‵π v s a) <$> quoteHyp d p b)
-quoteHyp d p t@(def n is)                             =
+quoteHyp d p   (pi s (arg i a) b) =
+  quoteHyp d p a >>= maybe (const nothing) (fmap (‵π i s a) <$> quoteHyp d p b)
+quoteHyp d p t@(appDef n is)      =
   just $ if d == n
-    then just (vis₁ con (quote var) ∘ toTuple ∘ map argVal ∘ drop p $ is)
+    then just (vis₁ appCon (quote var) ∘ toTuple ∘ map argVal ∘ drop p $ is)
     else nothing
-quoteHyp d p t                                        = just nothing
+quoteHyp d p t                    = just nothing
 
 quoteDesc : Name -> ℕ -> Type -> Maybe Term
-quoteDesc d p (rpi (arg (arg-info v _) a) (abs s b)) =
-  (λ ma' b' -> maybe (λ a' -> vis₂ con (quote _⊛_) a' (unshift′ b')) (‵π v s a b') ma')
+quoteDesc d p (pi s (arg i a) b) =
+  (λ ma' b' -> maybe (λ a' -> vis₂ appCon (quote _⊛_) a' (unshift′ b')) (‵π i s a b') ma')
     <$> quoteHyp d p a <*> quoteDesc d p b
-quoteDesc d p  t                                     = join $ quoteHyp d p t
+quoteDesc d p  t                 = join $ quoteHyp d p t
 
+-- Move it to the lib.
+levelOf : Term -> Maybe Term
+levelOf (sort (set t)) = just t
+levelOf (sort (lit n)) = just (fold ℕ _ (quoteTerm lzero) (vis₁ appDef (quote lsuc)) n)
+levelOf (sort unknown) = just unknown
+levelOf  _             = nothing
+
+-- We didn't need that `β` previously. Why do we need it now?
+-- Or, perhaps, why didn't we need it earlier? It kinda makes sense.
 quoteData : Name -> TC Term
 quoteData d =
   getData d >>= λ{ (packData _ a b cs ns) ->
-      case mapM (quoteDesc d (countPis a)) cs of λ
-        {  nothing   -> throw "can't read a data type"
-        ; (just cs′) -> (λ qa qb -> elamsBy a ∘ curryBy b ∘ vis₁ def (quote μ) $
-               vis₅ con (quote packData) (reify d) qa qb (reify cs′) (reify ns))
+      case levelOf (resType b) ⊗ mapM (quoteDesc d (countPis a)) cs of λ
+        {  nothing         -> throw "can't read a data type"
+        ; (just (β , cs′)) -> (λ qa qb -> explLamsBy a ∘ curryBy b $
+             appDef (quote μ) $ implRelArg unknown ∷ implRelArg β ∷
+               explRelArg (vis₅ appCon (quote packData) (reify d) qa qb (reify cs′) (reify ns)) ∷ [])
              <$> quoteTC a <*> quoteTC b
+             -- typeError (termErr (reify cs′) ∷ [])
         }
     }
 
 -- This doesn't work, because `quoteData` doesn't generate implicit lambdas,
 -- because otherwise nothing would work due to the #2118 issue.
 readDataTo : Name -> Name -> TC _
-readDataTo d′ d = getType d >>= declareDef (earg d′)
+readDataTo d′ d = getType d >>= declareDef (explRelArg d′)
                >> quoteData d >>= λ qd -> defineSimpleFun d′ qd
 
 onFinalMu : ∀ {α} {A : Set α} -> (∀ {ι β} {I : Set ι} -> Data (Desc I β) -> TC A) -> Type -> TC A
 onFinalMu k a = case resType a of λ
-  { (def (quote μ) (iarg qι ∷ iarg qβ ∷ iarg qI ∷ earg qD ∷ _)) ->
+  { (appDef (quote μ) (implRelArg qι ∷ implRelArg qβ ∷ implRelArg qI ∷ explRelArg qD ∷ _)) ->
        bindTC (unquoteTC qι) λ ι ->
        bindTC (unquoteTC qβ) λ β ->
        bindTC (unquoteTC qI) λ (I : Set ι) ->
@@ -58,10 +71,10 @@ macro
   gcoerce fd ?r = inferType ?r >>= onFinalMu λ{ D@(packData _ _ b _ _) ->
       quoteTC (μ D) >>= λ μD ->
       traverseAll quoteTC (allCons D) >>= λ cs′ ->
-      unify ?r $ vis def fd (curryBy b μD ∷ allToList cs′)
+      unify ?r $ vis appDef fd (curryBy b μD ∷ allToList cs′)
     }
 
   guncoerce : ∀ {ι β} {I : Set ι} {D : Data (Desc I β)} {j} -> μ D j -> Term -> TC _
   guncoerce {D = packData d a b cs ns} e ?r =
-    quoteTC e >>= λ qe -> unify ?r ∘ vis def (quote curryFoldMono) $
-      euncurryBy b (vis def d (replicate (countEPis a) unknown)) ∷ qe ∷ unmap (λ n -> con n []) ns
+    quoteTC e >>= λ qe -> unify ?r ∘ vis appDef (quote curryFoldMono) $
+      euncurryBy b (vis appDef d (replicate (countExplPis a) unknown)) ∷ qe ∷ unmap (λ n -> appCon n []) ns
