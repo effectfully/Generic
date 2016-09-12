@@ -19,9 +19,14 @@ open import Generic.Lib.Data.Product
 open import Generic.Lib.Data.List
 
 import Data.Nat.Base as Nat
+open import Data.Vec using (toList)
+open import Data.Vec.N-ary using (N-ary; curryⁿ)
 
 infixr 5 _‵→_
 infixl 3 _·_
+
+listCurryⁿ : ∀ {α β} {A : Set α} {B : Set β} n -> (List A -> B) -> N-ary n A B
+listCurryⁿ n f = curryⁿ {n} (f ∘ toList)
 
 named : String -> String
 named s = if s == "_" then "x" else s
@@ -96,54 +101,6 @@ pattern _‵→_ a b = pi "_" (explRelArg a) b
 
 {-# DISPLAY pi "_" (explRelArg a) b = a ‵→ b #-}
 
-vis : {A : Set} -> (A -> List (Arg Term) -> Term) -> A -> List Term -> Term
-vis k x = k x ∘ map explRelArg
-
-vis₀ : {A : Set} -> (A -> List (Arg Term) -> Term) -> A -> Term
-vis₀ k x = vis k x []
-
-vis₁ : {A : Set} -> (A -> List (Arg Term) -> Term) -> A -> Term -> Term
-vis₁ k f x₁ = vis k f (x₁ ∷ [])
-
-vis₂ : {A : Set} -> (A -> List (Arg Term) -> Term) -> A -> Term -> Term -> Term
-vis₂ k f x₁ x₂ = vis k f (x₁ ∷ x₂ ∷ [])
-
-vis₃ : {A : Set} -> (A -> List (Arg Term) -> Term) -> A -> Term -> Term -> Term -> Term
-vis₃ k f x₁ x₂ x₃ = vis k f (x₁ ∷ x₂ ∷ x₃ ∷ [])
-
-vis₄ : {A : Set} -> (A -> List (Arg Term) -> Term) -> A -> Term -> Term -> Term -> Term -> Term
-vis₄ k f x₁ x₂ x₃ x₄ = vis k f (x₁ ∷ x₂ ∷ x₃ ∷ x₄ ∷ [])
-
-vis₅ : {A : Set}
-     -> (A -> List (Arg Term) -> Term) -> A -> Term -> Term -> Term -> Term -> Term -> Term
-vis₅ k f x₁ x₂ x₃ x₄ x₅ = vis k f (x₁ ∷ x₂ ∷ x₃ ∷ x₄ ∷ x₅ ∷ [])
-
-_·_ : Term -> Term -> Term
-f · x = vis₂ appDef (quote _$_) f x
-
-isRelevant : Relevance -> Bool
-isRelevant rel = true
-isRelevant irr = false
-
-argInfo : ∀ {A} -> Arg A -> _
-argInfo (arg i x) = i
-
-argVal : ∀ {A} -> Arg A -> A
-argVal (arg i x) = x
-
-unExpl : ∀ {A} -> Arg A -> Maybe A
-unExpl (explArg r x) = just x
-unExpl  _            = nothing
-
-absName : ∀ {A} -> Abs A -> String
-absName (abs s x) = s
-
-absVal : ∀ {A} -> Abs A -> A
-absVal (abs s x) = x
-
-pvars : List String -> List (Arg Pattern)
-pvars = map (explRelArg ∘ patVar ∘ named)
-
 mutual
   <_>_ : ∀ {α} -> Relevance -> Set α -> Set α
   <_>_ = flip RelValue
@@ -175,6 +132,51 @@ RelEq : ∀ {α} -> Relevance -> Set α -> Set α
 RelEq rel A = Eq A
 RelEq irr A = ⊤
 
+vis : {A : Set} -> (A -> List (Arg Term) -> Term) -> A -> List Term -> Term
+vis k x = k x ∘ map explRelArg
+
+vis₀ : {A : Set} -> (A -> List (Arg Term) -> Term) -> A -> Term
+vis₀ k x = vis k x []
+
+vis₁ : {A : Set} -> (A -> List (Arg Term) -> Term) -> A -> Term -> Term
+vis₁ k f x₁ = vis k f (x₁ ∷ [])
+
+vis₂ : {A : Set} -> (A -> List (Arg Term) -> Term) -> A -> Term -> Term -> Term
+vis₂ k f x₁ x₂ = vis k f (x₁ ∷ x₂ ∷ [])
+
+vis₃ : {A : Set} -> (A -> List (Arg Term) -> Term) -> A -> Term -> Term -> Term -> Term
+vis₃ k f x₁ x₂ x₃ = vis k f (x₁ ∷ x₂ ∷ x₃ ∷ [])
+
+vis₄ : {A : Set} -> (A -> List (Arg Term) -> Term) -> A -> Term -> Term -> Term -> Term -> Term
+vis₄ k f x₁ x₂ x₃ x₄ = vis k f (x₁ ∷ x₂ ∷ x₃ ∷ x₄ ∷ [])
+
+vis₅ : {A : Set}
+     -> (A -> List (Arg Term) -> Term) -> A -> Term -> Term -> Term -> Term -> Term -> Term
+vis₅ k f x₁ x₂ x₃ x₄ x₅ = vis k f (x₁ ∷ x₂ ∷ x₃ ∷ x₄ ∷ x₅ ∷ [])
+
+isRelevant : Relevance -> Bool
+isRelevant rel = true
+isRelevant irr = false
+
+argInfo : ∀ {A} -> Arg A -> _
+argInfo (arg i x) = i
+
+argVal : ∀ {A} -> Arg A -> A
+argVal (arg i x) = x
+
+unExpl : ∀ {A} -> Arg A -> Maybe A
+unExpl (explArg r x) = just x
+unExpl  _            = nothing
+
+absName : ∀ {A} -> Abs A -> String
+absName (abs s x) = s
+
+absVal : ∀ {A} -> Abs A -> A
+absVal (abs s x) = x
+
+patVars : List String -> List (Arg Pattern)
+patVars = map (explRelArg ∘ patVar ∘ named)
+
 record Data {α} (A : Set α) : Set α where
   no-eta-equality
   constructor packData
@@ -200,63 +202,6 @@ instance
         go : ∀ {r} {{aEq : RelEq r A}} -> IsSet (< r > A)
         go (relv x) (relv y) = dcong relv relv-inj (x ≟ y)
         go (irrv x) (irrv y) = yes refl
-
-  TermReify : Reify Term
-  TermReify = record
-    { reify = id
-    }
-
-  NameReify : Reify Name
-  NameReify = record
-    { reify = lit ∘′ name
-    }
-
-  VisibilityReify : Reify Visibility
-  VisibilityReify = record
-    { reify = λ
-        { expl -> quoteTerm expl
-        ; impl -> quoteTerm impl
-        ; inst -> quoteTerm inst
-        }
-    }
-
-  RelevanceReify : Reify Relevance
-  RelevanceReify = record
-    { reify = λ
-        { rel -> quoteTerm rel
-        ; irr -> quoteTerm irr
-        }
-    }
-
-  ArgInfoReify : Reify Arg-info
-  ArgInfoReify = record
-    { reify = λ{ (arg-info v r) -> vis₂ appCon (quote arg-info) (reify v) (reify r) }
-    }
-
-  ProdReify : ∀ {α β} {A : Set α} {B : A -> Set β}
-                {{aReify : Reify A}} {{bReify : ∀ {x} -> Reify (B x)}} -> Reify (Σ A B)
-  ProdReify = record
-    { reify = uncurry λ x y -> vis₂ appCon (quote _,_) (reify x) (reify y)
-    }
-
-  ℕReify : Reify ℕ
-  ℕReify = record
-    { reify = Nat.fold (quoteTerm 0) (vis₁ appCon (quote suc))
-    }
-
-  ListReify : ∀ {α} {A : Set α} {{aReify : Reify A}} -> Reify (List A)
-  ListReify = record
-    { reify = foldr (vis₂ appCon (quote _∷_) ∘ reify) (quoteTerm (List Term ∋ []))
-    }  
-
-  AllReify : ∀ {α β} {A : Set α} {B : A -> Set β} {xs} {{bReify : ∀ {x} -> Reify (B x)}}
-           -> Reify (All B xs)
-  AllReify {B = B} {{bReify}} = record
-    { reify = go _
-    } where
-        go : ∀ xs -> All B xs -> Term
-        go  []       tt      = pureDef (quote tt₀)
-        go (x ∷ xs) (y , ys) = vis₂ appCon (quote _,_) (reify {{bReify}} y) (go xs ys)
 
   ArgFunctor : RawFunctor Arg
   ArgFunctor = record
@@ -315,13 +260,32 @@ shift = shiftBy 1
 unshiftBy : ℕ -> Term -> Term
 unshiftBy n = ren (_∸ n)
 
-unshift′ : Term -> Term
-unshift′ t = explLam "_" t · appDef (quote tt₀) []
-
 isSomeName : Name -> Term -> Bool
 isSomeName n (appDef m _) = n == m
 isSomeName n (appCon m _) = n == m
 isSomeName n  t           = false
+
+{-# TERMINATING #-}
+mutual
+  mapName : (ℕ -> List (Arg Term) -> Term) -> Name -> Term -> Term
+  mapName f n (appVar v xs)   = appVar v (mapNames f n xs)
+  mapName f n (appCon m xs)   = (if n == m then f 0 else appCon m) (mapNames f n xs)
+  mapName f n (appDef m xs)   = (if n == m then f 0 else appDef m) (mapNames f n xs)
+  mapName f n (lam v s t)     = lam v s (mapName (f ∘ suc) n t)
+  mapName f n (pat-lam cs xs) = undefined where postulate undefined : _
+  mapName f n (pi s a b)      = pi s (mapName f n <$> a) (mapName (f ∘ suc) n b)
+  mapName f n (sort s)        = sort (mapNameSort f n s)
+  mapName f n (lit l)         = lit l
+  mapName f n (appMeta x xs)  = appMeta x (mapNames f n xs)
+  mapName f n  unknown        = unknown
+
+  mapNames : (ℕ -> List (Arg Term) -> Term) -> Name -> List (Arg Term) -> List (Arg Term)
+  mapNames f n = map (fmap (mapName f n))
+
+  mapNameSort : (ℕ -> List (Arg Term) -> Term) -> Name -> Sort -> Sort
+  mapNameSort f n (set t) = set (mapName f n t)
+  mapNameSort f n (lit l) = lit l
+  mapNameSort f n unknown = unknown
 
 explsOnly : List (Arg Term) -> List Term
 explsOnly = mapMaybe unExpl
@@ -390,45 +354,11 @@ explPisToAbsVars (suc n) (explPi r s a b) = abs s (pureVar n) ∷ explPisToAbsVa
 explPisToAbsVars (suc n) (pi       s a b) = explPisToAbsVars n b
 explPisToAbsVars  n       b               = []
 
-{-# TERMINATING #-}
-mutual
-  mapName : (ℕ -> List (Arg Term) -> Term) -> Name -> Term -> Term
-  mapName f n (appVar v xs)   = appVar v (mapNames f n xs)
-  mapName f n (appCon m xs)   = (if n == m then f 0 else appCon m) (mapNames f n xs)
-  mapName f n (appDef m xs)   = (if n == m then f 0 else appDef m) (mapNames f n xs)
-  mapName f n (lam v s t)     = lam v s (mapName (f ∘ suc) n t)
-  mapName f n (pat-lam cs xs) = undefined where postulate undefined : _
-  mapName f n (pi s a b)      = pi s (mapName f n <$> a) (mapName (f ∘ suc) n b)
-  mapName f n (sort s)        = sort (mapNameSort f n s)
-  mapName f n (lit l)         = lit l
-  mapName f n (appMeta x xs)  = appMeta x (mapNames f n xs)
-  mapName f n  unknown        = unknown
-
-  mapNames : (ℕ -> List (Arg Term) -> Term) -> Name -> List (Arg Term) -> List (Arg Term)
-  mapNames f n = map (fmap (mapName f n))
-
-  mapNameSort : (ℕ -> List (Arg Term) -> Term) -> Name -> Sort -> Sort
-  mapNameSort f n (set t) = set (mapName f n t)
-  mapNameSort f n (lit l) = lit l
-  mapNameSort f n unknown = unknown
-
-toTuple : List Term -> Term
-toTuple = foldr₁ (vis₂ appCon (quote _,_)) (pureDef (quote tt₀))
-
-curryBy : Type -> Term -> Term
-curryBy = go 0 where
-  go : ℕ -> Type -> Term -> Term
-  go n (pi s (arg (arg-info v r) a) b) t = lam v s $ go (suc n) b t
-  go n  _                              t = shiftBy n t · toTuple (map pureVar (downFrom n))
-
-euncurryBy : Type -> Term -> Term
-euncurryBy a f = explLam "x" $ appDef (quote id) (explArg rel (shift f) ∷ go a (pureVar 0)) where
-  go : Term -> Term -> List (Arg Term)
-  go (explPi r s a b@(pi _ _ _)) p =
-    explArg r (vis₁ appDef (quote proj₁) p) ∷ go b (vis₁ appDef (quote proj₂) p)
-  go (pi       s a b@(pi _ _ _)) p = go b (vis₁ appDef (quote proj₂) p)
-  go (explPi r s a b)            x = explArg r x ∷ []
-  go  _                          t = []
+isFunction : Definition -> Bool
+isFunction (function _) = true
+isFunction  axiom       = true
+isFunction  primitive′  = true
+isFunction  _           = false
 
 throw : ∀ {α} {A : Set α} -> String -> TC A
 throw s = typeError (strErr s ∷ [])
@@ -436,13 +366,107 @@ throw s = typeError (strErr s ∷ [])
 panic : ∀ {α} {A : Set α} -> String -> TC A
 panic s = throw $ "panic: " ++ˢ s
 
+macro
+  sate : Name -> Term -> TC _
+  sate f ?r =
+    getType f >>= λ a ->
+    let res = λ app -> quoteTC (listCurryⁿ (countExplPis a) (vis app f)) >>= unify ?r in
+    getDefinition f >>= λ
+      { (constructor′ _) -> res appCon
+      ;  d               -> if isFunction d
+           then res appDef
+           else throw "not a function or a constructor"
+      }
+
+_·_ : Term -> Term -> Term
+_·_ = sate _$_
+
+unshift′ : Term -> Term
+unshift′ t = explLam "_" t · sate tt₀
+
+instance
+  TermReify : Reify Term
+  TermReify = record
+    { reify = id
+    }
+
+  NameReify : Reify Name
+  NameReify = record
+    { reify = lit ∘′ name
+    }
+
+  VisibilityReify : Reify Visibility
+  VisibilityReify = record
+    { reify = λ
+        { expl -> sate expl
+        ; impl -> sate impl
+        ; inst -> sate inst
+        }
+    }
+
+  RelevanceReify : Reify Relevance
+  RelevanceReify = record
+    { reify = λ
+        { rel -> sate rel
+        ; irr -> sate irr
+        }
+    }
+
+  ArgInfoReify : Reify Arg-info
+  ArgInfoReify = record
+    { reify = λ{ (arg-info v r) -> sate arg-info (reify v) (reify r) }
+    }
+
+  ProdReify : ∀ {α β} {A : Set α} {B : A -> Set β}
+                {{aReify : Reify A}} {{bReify : ∀ {x} -> Reify (B x)}} -> Reify (Σ A B)
+  ProdReify = record
+    { reify = uncurry λ x y -> sate _,_ (reify x) (reify y)
+    }
+
+  ℕReify : Reify ℕ
+  ℕReify = record
+    { reify = Nat.fold (sate zero) (sate suc)
+    }
+
+  ListReify : ∀ {α} {A : Set α} {{aReify : Reify A}} -> Reify (List A)
+  ListReify = record
+    { reify = foldr (sate _∷_ ∘ reify) (sate [])
+    }  
+
+  AllReify : ∀ {α β} {A : Set α} {B : A -> Set β} {xs} {{bReify : ∀ {x} -> Reify (B x)}}
+           -> Reify (All B xs)
+  AllReify {B = B} {{bReify}} = record
+    { reify = go _
+    } where
+        go : ∀ xs -> All B xs -> Term
+        go  []       tt      = sate tt₀
+        go (x ∷ xs) (y , ys) = sate _,_ (reify {{bReify}} y) (go xs ys)
+
+
+toTuple : List Term -> Term
+toTuple = foldr₁ (sate _,_) (sate tt₀)
+
+curryBy : Type -> Term -> Term
+curryBy = go 0 where
+  go : ℕ -> Type -> Term -> Term
+  go n (pi s (arg (arg-info v r) a) b) t = lam v s $ go (suc n) b t
+  go n  _                              t = shiftBy n t · toTuple (map pureVar (downFrom n))
+
+explUncurryBy : Type -> Term -> Term
+explUncurryBy a f = explLam "x" $ appDef (quote id) (explArg rel (shift f) ∷ go a (pureVar 0)) where
+  go : Term -> Term -> List (Arg Term)
+  go (explPi r s a b@(pi _ _ _)) p = explArg r (sate proj₁ p) ∷ go b (sate proj₂ p)
+  go (pi       s a b@(pi _ _ _)) p = go b (sate proj₂ p)
+  go (explPi r s a b)            x = explArg r x ∷ []
+  go  _                          t = []
+
 defineSimpleFun : Name -> Term -> TC _
 defineSimpleFun n t = defineFun n (clause [] t ∷ [])
 
 -- Able to normalize a Setω.
 normalize : Term -> TC Term
 normalize (pi s (arg i a) b) =
-  (pi s ∘ arg i) <$> normalize a <*> extendContext (arg i a) (normalize b)
+  pi s ∘ arg i <$> normalize a <*> extendContext (arg i a) (normalize b)
 normalize  t                 = normalise t
 
 getData : Name -> TC (Data Type)

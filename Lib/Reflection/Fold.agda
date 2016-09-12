@@ -30,21 +30,19 @@ foldClausesOf (packData d a b cs ns) f = allToList $ mapAllInd (λ {a} n -> clau
     k    = length cs
     args = explPisToNames c
     j    = length args
-    lhs  = pvars ("P" ∷ unmap (λ n -> "f" ++ˢ showName n) ns)
-         ∷ʳ explRelArg (patCon n (pvars args))
+    lhs  = patVars ("P" ∷ unmap (λ n -> "f" ++ˢ showName n) ns)
+         ∷ʳ explRelArg (patCon n (patVars args))
 
     tryHyp : ℕ -> ℕ -> Type -> Maybe Term
     tryHyp m l (explPi r s a b) = explLam s <$> tryHyp (suc m) l b
     tryHyp m l (pi       s a b) = tryHyp m l b
-    tryHyp m l (appDef e _)     = if d == e
-      then just ∘′ vis appDef f $
-        map (λ i -> pureVar (m + i)) (downFromTo (suc k + j) j)
-          ∷ʳ vis appVar (m + l) (map pureVar (downFrom m))
-      else nothing
+    tryHyp m l (appDef e _)     = d == e ?> vis appDef f (pars ∷ʳ rarg) where
+      pars = map (λ i -> pureVar (m + i)) $ downFromTo (suc k + j) j
+      rarg = vis appVar (m + l) $ map pureVar (downFrom m)
     tryHyp m l  b               = nothing
 
     hyps : ℕ -> Type -> List Term
-    hyps (suc l) (explPi r s a b) = maybe id (pureVar l) (tryHyp 0 l a) ∷ hyps l b
+    hyps (suc l) (explPi r s a b) = fromMaybe (pureVar l) (tryHyp 0 l a) ∷ hyps l b
     hyps  l      (pi       s a b) = hyps l b
     hyps  l       b               = []
 

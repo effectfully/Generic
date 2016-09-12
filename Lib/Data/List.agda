@@ -1,6 +1,6 @@
 module Generic.Lib.Data.List where
 
-open import Data.List.Base hiding ([]) public
+open import Data.List.Base hiding ([]) renaming (fromMaybe to maybeToList) public
 open List public
 
 open import Generic.Lib.Intro

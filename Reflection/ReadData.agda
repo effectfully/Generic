@@ -4,30 +4,25 @@ open import Generic.Core
 open import Generic.Function.FoldMono
 
 ‵π : Arg-info -> String -> Term -> Term -> Term 
-‵π i s a b =
-  vis₃ appCon (quote π) (reify i) unknown ∘
-    vis₁ appCon (quote coerce) ∘ vis₂ appCon (quote _,_) a $
-      appDef (quote appᵣ) (implRelArg (reify (relevance i)) ∷ explRelArg (explLam s b) ∷ [])
+‵π i s a b = sate π (reify i) unknown ∘ sate coerce ∘ sate _,_ a $
+  appDef (quote appᵣ) (implRelArg (reify (relevance i)) ∷ explRelArg (explLam s b) ∷ [])
 
 quoteHyp : Name -> ℕ -> Type -> Maybe (Maybe Term)
 quoteHyp d p   (pi s (arg i a) b) =
   quoteHyp d p a >>= maybe (const nothing) (fmap (‵π i s a) <$> quoteHyp d p b)
-quoteHyp d p t@(appDef n is)      =
-  just $ if d == n
-    then just (vis₁ appCon (quote var) ∘ toTuple ∘ map argVal ∘ drop p $ is)
-    else nothing
+quoteHyp d p t@(appDef n is)      = just $ d == n ?> sate var ∘ toTuple ∘ map argVal ∘ drop p $ is
 quoteHyp d p t                    = just nothing
 
 quoteDesc : Name -> ℕ -> Type -> Maybe Term
 quoteDesc d p (pi s (arg i a) b) =
-  (λ ma' b' -> maybe (λ a' -> vis₂ appCon (quote _⊛_) a' (unshift′ b')) (‵π i s a b') ma')
+  (λ ma' b' -> maybe (λ a' -> sate _⊛_ a' (unshift′ b')) (‵π i s a b') ma')
     <$> quoteHyp d p a <*> quoteDesc d p b
 quoteDesc d p  t                 = join $ quoteHyp d p t
 
 -- Move it to the lib.
 levelOf : Term -> Maybe Term
 levelOf (sort (set t)) = just t
-levelOf (sort (lit n)) = just (fold ℕ _ (quoteTerm lzero) (vis₁ appDef (quote lsuc)) n)
+levelOf (sort (lit n)) = just (fold ℕ _ (sate lzero) (sate lsuc) n)
 levelOf (sort unknown) = just unknown
 levelOf  _             = nothing
 
@@ -38,11 +33,12 @@ quoteData d =
   getData d >>= λ{ (packData _ a b cs ns) ->
       case levelOf (resType b) ⊗ mapM (quoteDesc d (countPis a)) cs of λ
         {  nothing         -> throw "can't read a data type"
-        ; (just (β , cs′)) -> (λ qa qb -> explLamsBy a ∘ curryBy b $
-             appDef (quote μ) $ implRelArg unknown ∷ implRelArg β ∷
-               explRelArg (vis₅ appCon (quote packData) (reify d) qa qb (reify cs′) (reify ns)) ∷ [])
+        ; (just (β , cs′)) -> (λ qa qb -> explLamsBy a ∘ curryBy b ∘ appDef (quote μ)
+               $ implRelArg unknown
+               ∷ implRelArg β
+               ∷ explRelArg (sate packData (reify d) qa qb (reify cs′) (reify ns))
+               ∷ [])
              <$> quoteTC a <*> quoteTC b
-             -- typeError (termErr (reify cs′) ∷ [])
         }
     }
 
@@ -77,4 +73,4 @@ macro
   guncoerce : ∀ {ι β} {I : Set ι} {D : Data (Desc I β)} {j} -> μ D j -> Term -> TC _
   guncoerce {D = packData d a b cs ns} e ?r =
     quoteTC e >>= λ qe -> unify ?r ∘ vis appDef (quote curryFoldMono) $
-      euncurryBy b (vis appDef d (replicate (countExplPis a) unknown)) ∷ qe ∷ unmap (λ n -> appCon n []) ns
+      explUncurryBy b (vis appDef d (replicate (countExplPis a) unknown)) ∷ qe ∷ unmap (λ n -> appCon n []) ns

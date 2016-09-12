@@ -18,7 +18,7 @@ fromToClausesOf (packData d a b cs ns) f = unmap (λ {a} -> clauseOf a) ns where
   clauseOf c n =
     let es = explPisToNames c; i = length es
         mxs = fromPis i 0 c; xs = mapMaybe proj₁ mxs; p = length xs
-    in clause (explRelArg (patCon n (pvars es)) ∷ []) ∘ vis appDef (quote congn)
+    in clause (explRelArg (patCon n (patVars es)) ∷ []) ∘ vis appDef (quote congn)
          $ reify p
          ∷ foldr (explLam ∘ proj₁) (vis appCon n $ map (uncurry λ m i ->
              maybe (proj₂ >>> λ j -> pureVar (p ∸ suc j)) (pureVar (i + p)) m) mxs) xs
@@ -44,7 +44,7 @@ injTypeOf (packData d a b cs ns) d′ = let ab = appendType a b; k = countPis ab
 
 uncoerce : Data Type -> Term
 uncoerce (packData d a b cs ns) = explLam "x" ∘ vis appDef (quote curryFoldMono) $
-  euncurryBy b (vis appDef d (replicate (countExplPis a) unknown)) ∷ pureVar 0 ∷ unmap (λ n -> appCon n []) ns
+  explUncurryBy b (vis appDef d (replicate (countExplPis a) unknown)) ∷ pureVar 0 ∷ unmap (λ n -> appCon n []) ns
 
 deriveEqTo : Name -> Name -> TC _
 deriveEqTo f d =
