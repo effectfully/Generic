@@ -25,9 +25,10 @@ foldTypeOf (packData d a b cs ns) = appendType iab ∘ pi "π" π ∘ pi "P" P $
 
 foldClausesOf : Data Type -> Name -> List Clause
 foldClausesOf (packData d a b cs ns) f = allToList $ mapAllInd (λ {a} n -> clauseOf n a) ns where
+  k = length cs
+
   clauseOf : ℕ -> Type -> Name -> Clause
   clauseOf i c n = clause lhs rhs where
-    k    = length cs
     args = explPisToNames c
     j    = length args
     lhs  = patVars ("P" ∷ unmap (λ n -> "f" ++ˢ showName n) ns)

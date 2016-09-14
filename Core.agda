@@ -78,13 +78,13 @@ mutual
         -> Desc I β
     _⊛_ : Desc I β -> Desc I β -> Desc I β
 
-pattern explDPi A D = π (arg-info expl rel) _ (coerce (A , D))
-pattern implDPi A D = π (arg-info impl rel) _ (coerce (A , D))
-pattern instDPi A D = π (arg-info inst rel) _ (coerce (A , D))
+pattern explDPi A D = π (arg-info expl rel) refl (coerce (A , D))
+pattern implDPi A D = π (arg-info impl rel) refl (coerce (A , D))
+pattern instDPi A D = π (arg-info inst rel) refl (coerce (A , D))
 
-{-# DISPLAY π (arg-info expl rel) _ (coerce (A , D)) = explDPi A D #-}
-{-# DISPLAY π (arg-info impl rel) _ (coerce (A , D)) = implDPi A D #-}
-{-# DISPLAY π (arg-info inst rel) _ (coerce (A , D)) = instDPi A D #-}
+{-# DISPLAY π (arg-info expl rel) refl (coerce (A , D)) = explDPi A D #-}
+{-# DISPLAY π (arg-info impl rel) refl (coerce (A , D)) = implDPi A D #-}
+{-# DISPLAY π (arg-info inst rel) refl (coerce (A , D)) = instDPi A D #-}
 
 _⇒_ : ∀ {ι α β} {I : Set ι} {{q : α ≤ℓ β}} -> Set α -> Desc I β -> Desc I β
 _⇒_ {{q}} A D = π (arg-info expl rel) q (qcoerce (A , λ _ -> D))

@@ -18,7 +18,6 @@ open import Generic.Lib.Data.Maybe
 open import Generic.Lib.Data.Product
 open import Generic.Lib.Data.List
 
-import Data.Nat.Base as Nat
 open import Data.Vec using (toList)
 open import Data.Vec.N-ary using (N-ary; curryⁿ)
 
@@ -354,18 +353,13 @@ explPisToAbsVars (suc n) (explPi r s a b) = abs s (pureVar n) ∷ explPisToAbsVa
 explPisToAbsVars (suc n) (pi       s a b) = explPisToAbsVars n b
 explPisToAbsVars  n       b               = []
 
-isFunction : Definition -> Bool
-isFunction (function _) = true
-isFunction  axiom       = true
-isFunction  primitive′  = true
-isFunction  _           = false
-
 throw : ∀ {α} {A : Set α} -> String -> TC A
 throw s = typeError (strErr s ∷ [])
 
 panic : ∀ {α} {A : Set α} -> String -> TC A
 panic s = throw $ "panic: " ++ˢ s
 
+-- I'll merge these later.
 macro
   sate : Name -> Term -> TC _
   sate f ?r =
@@ -373,16 +367,25 @@ macro
     let res = λ app -> quoteTC (listCurryⁿ (countExplPis a) (vis app f)) >>= unify ?r in
     getDefinition f >>= λ
       { (constructor′ _) -> res appCon
-      ;  d               -> if isFunction d
-           then res appDef
-           else throw "not a function or a constructor"
+      ;  _               -> res appDef
       }
+
+  sateMacro : Name -> Term -> TC _
+  sateMacro f ?r =
+    getType f >>= λ a ->
+    quoteTC (listCurryⁿ (pred (countExplPis a)) (vis appDef f)) >>= unify ?r
 
 _·_ : Term -> Term -> Term
 _·_ = sate _$_
 
 unshift′ : Term -> Term
 unshift′ t = explLam "_" t · sate tt₀
+
+termLevelOf : Term -> Maybe Term
+termLevelOf (sort (set t)) = just t
+termLevelOf (sort (lit n)) = just (foldℕ (sate lsuc) (sate lzero) n)
+termLevelOf (sort unknown) = just unknown
+termLevelOf  _             = nothing
 
 instance
   TermReify : Reify Term
@@ -425,7 +428,7 @@ instance
 
   ℕReify : Reify ℕ
   ℕReify = record
-    { reify = Nat.fold (sate zero) (sate suc)
+    { reify = foldℕ (sate suc) (sate zero)
     }
 
   ListReify : ∀ {α} {A : Set α} {{aReify : Reify A}} -> Reify (List A)

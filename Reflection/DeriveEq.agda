@@ -6,7 +6,6 @@ open import Generic.Reflection.ReadData
 
 fromToClausesOf : Data Type -> Name -> List Clause
 fromToClausesOf (packData d a b cs ns) f = unmap (λ {a} -> clauseOf a) ns where
-  
   fromPis : ℕ -> ℕ -> Type -> List (Maybe (String × ℕ) × ℕ)
   fromPis (suc i) j (explPi r s a b) = if isSomeName d a
     then (just (s , j) , i) ∷ fromPis i (suc j) b
@@ -16,8 +15,11 @@ fromToClausesOf (packData d a b cs ns) f = unmap (λ {a} -> clauseOf a) ns where
 
   clauseOf : Type -> Name -> Clause
   clauseOf c n =
-    let es = explPisToNames c; i = length es
-        mxs = fromPis i 0 c; xs = mapMaybe proj₁ mxs; p = length xs
+    let es  = explPisToNames c
+        i   = length es
+        mxs = fromPis i 0 c
+        xs  = mapMaybe proj₁ mxs
+        p   = length xs
     in clause (explRelArg (patCon n (patVars es)) ∷ []) ∘ vis appDef (quote congn)
          $ reify p
          ∷ foldr (explLam ∘ proj₁) (vis appCon n $ map (uncurry λ m i ->
@@ -35,28 +37,30 @@ fromTypeOf (packData d a b cs ns) d′ = let ab = appendType a b; k = countPis a
 fromToTypeOf : Data Type -> Name -> Name -> Name -> Type
 fromToTypeOf (packData d a b cs ns) d′ to from = let ab = appendType a b; k = countPis ab in
   appendType (implicitize ab) ∘ pi "x" (explRelArg (appDef d (pisToArgVars k ab))) $
-    vis₂ appDef (quote _≡_) (vis₁ appDef from (vis₁ appDef to (pureVar 0))) (pureVar 0)
+    sate _≡_ (vis₁ appDef from (vis₁ appDef to (pureVar 0))) (pureVar 0)
 
 injTypeOf : Data Type -> Name -> Type
 injTypeOf (packData d a b cs ns) d′ = let ab = appendType a b; k = countPis ab in
   appendType (implicitize ab) $
-    vis₂ appDef (quote _↦_) (appDef d (pisToArgVars k ab)) (appDef d′ (pisToArgVars k ab))
+    sate _↦_ (appDef d (pisToArgVars k ab)) (appDef d′ (pisToArgVars k ab))
 
 uncoerce : Data Type -> Term
 uncoerce (packData d a b cs ns) = explLam "x" ∘ vis appDef (quote curryFoldMono) $
-  explUncurryBy b (vis appDef d (replicate (countExplPis a) unknown)) ∷ pureVar 0 ∷ unmap (λ n -> appCon n []) ns
+  explUncurryBy b (vis appDef d (replicate (countExplPis a) unknown)) ∷ pureVar 0 ∷ unmap pureCon ns
 
+-- Waits to be refactored.
 deriveEqTo : Name -> Name -> TC _
 deriveEqTo f d =
   getType d >>= λ a ->
   getData d >>= λ D ->
   freshName (showName d ++ˢ "′") >>= λ d′ ->
+  -- quoteData D >>= λ D′ -> -- I have no idea why (defineSimpleFun d′ D′) doesn't work.
   declareDef (explRelArg d′) a >>
-  defineSimpleFun d′ (vis₁ appDef (quote readData) (appDef d [])) >>
+  defineSimpleFun d′ (sateMacro readData (pureDef d)) >>
   deriveFold d >>= λ fd ->
   freshName ("to" ++ˢ showName d′) >>= λ to ->
   declareDef (explRelArg to) (toTypeOf D d′) >>
-  defineSimpleFun to (vis₁ appDef (quote gcoerce) (appDef fd [])) >>
+  defineSimpleFun to (sateMacro gcoerce (pureDef fd)) >>
   freshName ("from" ++ˢ showName d′) >>= λ from ->
   declareDef (explRelArg from) (fromTypeOf D d′) >>
   defineSimpleFun from (uncoerce D) >>
@@ -65,5 +69,10 @@ deriveEqTo f d =
   defineFun from-to (fromToClausesOf D from-to) >>
   freshName (showName d ++ˢ "Inj") >>= λ dInj ->
   declareDef (explRelArg dInj) (injTypeOf D d′) >>
-  defineSimpleFun dInj (vis₃ appCon (quote packInj) (appDef to []) (appDef from []) (appDef from-to [])) >>
-  defineSimpleFun f (vis₁ appDef (quote viaInj) (appDef dInj []))
+  defineSimpleFun dInj (sate packInj (pureDef to) (pureDef from) (pureDef from-to)) >>
+  defineSimpleFun f (sate viaInj (pureDef dInj))
+
+open import Generic.Property.Eq
+
+test : {A : Set} {{eqA : Eq A}} -> Eq (List A)
+unquoteDef test = deriveEqTo test (quote List)
