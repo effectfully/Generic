@@ -9,7 +9,7 @@ module _ where
   List = readData StdList
 
   pattern []       = #₀ lrefl
-  pattern _∷_ x xs = !#₁ (x , xs , lrefl)
+  pattern _∷_ x xs = !#₁ (relv x , xs , lrefl)
 
   _∷′_ : ∀ {α} {A : Set α} -> A -> List A -> List A
   _∷′_ = _∷_

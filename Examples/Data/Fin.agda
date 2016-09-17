@@ -7,8 +7,8 @@ import Data.Fin as Fin
 Fin : ℕ -> Set
 Fin = readData Fin.Fin
 
-pattern fzero {n}   = #₀  (n , lrefl)
-pattern fsuc  {n} i = !#₁ (n , i , lrefl)
+pattern fzero {n}   = #₀  (relv n , lrefl)
+pattern fsuc  {n} i = !#₁ (relv n , i , lrefl)
 
 elimFin : ∀ {n π}
         -> (P : ∀ {n} -> Fin n -> Set π)

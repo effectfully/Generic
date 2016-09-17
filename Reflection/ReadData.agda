@@ -23,7 +23,7 @@ quoteDesc d p  t                 = join $ quoteHyp d p t
 -- Or, perhaps, why didn't we need it earlier? It kinda makes sense.
 quoteData : Data Type -> TC Term
 quoteData (packData d a b cs ns) =
-  case termLevelOf (resType b) ⊗ mapM (quoteDesc d (countPis a)) cs of λ
+  case termLevelOf (monoLastType b) ⊗ mapM (quoteDesc d (countPis a)) cs of λ
     {  nothing         -> throw "can't read a data type"
     ; (just (β , cs′)) -> (λ qa qb -> explLamsBy a ∘ curryBy b ∘ appDef (quote μ)
            $ implRelArg unknown
@@ -34,7 +34,7 @@ quoteData (packData d a b cs ns) =
     }
 
 onFinalMu : ∀ {α} {A : Set α} -> (∀ {ι β} {I : Set ι} -> Data (Desc I β) -> TC A) -> Type -> TC A
-onFinalMu k a = case resType a of λ
+onFinalMu k = monoLastType >>> λ
   { (appDef (quote μ) (implRelArg qι ∷ implRelArg qβ ∷ implRelArg qI ∷ explRelArg qD ∷ _)) ->
        bindTC (unquoteTC qι) λ ι ->
        bindTC (unquoteTC qβ) λ β ->

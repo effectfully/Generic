@@ -289,6 +289,14 @@ mutual
 explsOnly : List (Arg Term) -> List Term
 explsOnly = mapMaybe unExpl
 
+initType : Type -> Type
+initType (pi s a b) = pi s a (initType b)
+initType  b         = unknown
+
+lastType : Type -> Type
+lastType (pi s a b) = lastType b
+lastType  b         = b
+
 takePis : ℕ -> Type -> Maybe Type
 takePis  0       a         = just unknown
 takePis (suc n) (pi s a b) = pi s a <$> takePis n b
@@ -299,15 +307,15 @@ dropPis  0       a         = just a
 dropPis (suc n) (pi s a b) = dropPis n b
 dropPis  _       _         = nothing
 
-appendType : Type -> Type -> Type
-appendType (pi s a b) c = pi s a (appendType b c)
-appendType  b         c = c
-
-resType : Type -> Type
-resType = go 0 where
+monoLastType : Type -> Type
+monoLastType = go 0 where
   go : ℕ -> Type -> Type
   go n (pi s a b) = go (suc n) b
   go n  b         = unshiftBy n b
+
+appendType : Type -> Type -> Type
+appendType (pi s a b) c = pi s a (appendType b c)
+appendType  b         c = c
 
 explLamsBy : Type -> Term -> Term
 explLamsBy (explPi r s a b) t = explLam s (explLamsBy b t)
@@ -484,7 +492,7 @@ getData d = getType d >>= λ ab -> getDefinition d >>= λ
            }
   ; (record′ c)      -> getType c >>= dropPis (countPis ab) >>> λ
        {  nothing  -> panic "getData: record"
-       ; (just a′) -> return $ packData d ab unknown (a′ ∷ []) (c , tt)
+       ; (just a′) -> return $ packData d (initType ab) (lastType ab) (a′ ∷ []) (c , tt)
        }
   ;  _               -> throw "not a data"
   }

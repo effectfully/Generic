@@ -10,7 +10,7 @@ postulate
 Lift : ∀ {α} β -> Set α -> Set (α ⊔ β)
 Lift β A = μ′ $ packData (quote Main.Lift) whatever whatever ((A ⇒ pos) ∷ []) (quote Main.lift , tt)
 
-pattern lift x = !#₀ (x , lrefl)
+pattern lift x = !#₀ (relv x , lrefl)
 
 lower : ∀ {α} {A : Set α} β -> Lift β A -> A
 lower β (lift x) = x
