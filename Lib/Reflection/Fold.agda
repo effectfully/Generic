@@ -23,8 +23,8 @@ foldTypeOf (packData d a b cs ns) = appendType iab ∘ pi "π" π ∘ pi "P" P $
   from = appDef d (pisToArgVars (2 + i + j) ab)
   to   = appVar 1 (pisToArgVars (3 + j) b)
 
-foldClausesOf : Data Type -> Name -> List Clause
-foldClausesOf (packData d a b cs ns) f = allToList $ mapAllInd (λ {a} n -> clauseOf n a) ns where
+foldClausesOf : Name -> Data Type -> List Clause
+foldClausesOf f (packData d a b cs ns) = allToList $ mapAllInd (λ {a} n -> clauseOf n a) ns where
   k = length cs
 
   clauseOf : ℕ -> Type -> Name -> Clause
@@ -55,19 +55,15 @@ foldClausesOf (packData d a b cs ns) f = allToList $ mapAllInd (λ {a} n -> clau
     --      5 4 3       2 1 0    3 2       4 3 1     1 0         6 5  2 1 0
     -- fold P g f (cons x t r) = f x (fold g f t) (λ y u -> fold g f (r y u))
 
-deriveFoldTo : Name -> Name -> TC _
-deriveFoldTo f d =
-  getData d >>= λ D ->
+defineFold : Name -> Data Type -> TC _
+defineFold f D =
   declareDef (explRelArg f) (foldTypeOf D) >>
-  defineFun f (foldClausesOf D f)
+  defineFun f (foldClausesOf f D)
 
-deriveFold : Name -> TC Name
-deriveFold d =
-  freshName ("fold" ++ˢ showName d) >>= λ fd ->
-  deriveFoldTo fd d >>
-  return fd
+deriveFold : Name -> Data Type -> TC Name
+deriveFold d D =
+  freshName ("fold" ++ˢ showName d) >>= λ f ->
+  f <$ defineFold f D
 
--- This drops leading implicit arguments, because `fd` is "applied" to the empty spine.
-macro
-  fold : Name -> Term -> TC _
-  fold d ?r = deriveFold d >>= λ fd -> unify ?r (pureDef fd)
+deriveFoldTo : Name -> Name -> TC _
+deriveFoldTo f = getData >=> defineFold f

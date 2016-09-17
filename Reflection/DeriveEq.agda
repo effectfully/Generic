@@ -48,8 +48,8 @@ injTypeOf (packData d a b cs ns) d′ =
       avs = pisToArgVars k ab
   in appendType (implicitize ab) $ sate _↦_ (appDef d avs) (appDef d′ avs)
 
-deriveDesc : Data Type -> Name -> TC Name
-deriveDesc D d =
+deriveDesc : Name -> Data Type -> TC Name
+deriveDesc d D =
   freshName (showName d ++ˢ "′") >>= λ d′ ->
   getType d >>= λ a ->
   declareDef (explRelArg d′) a >>
@@ -80,12 +80,12 @@ deriveInj D d′ to from from-to =
   inj <$ defineTerm inj (sate packInj (pureDef to) (pureDef from) (pureDef from-to))
 
 deriveEqTo : Name -> Name -> TC _
-deriveEqTo f d =
+deriveEqTo e d =
   getData d >>= λ D ->
-  deriveDesc D d >>= λ d′ ->
-  deriveFold d >>= λ fd ->
-  deriveTo D d′ fd >>= λ to ->
+  deriveDesc d D >>= λ d′ ->
+  deriveFold d D >>= λ f ->
+  deriveTo D d′ f >>= λ to ->
   deriveFrom D d′ >>= λ from ->
   deriveFromTo D d′ to from >>= λ from-to ->
   deriveInj D d′ to from from-to >>= λ inj ->
-  defineTerm f (sate viaInj (pureDef inj))
+  defineTerm e (sate viaInj (pureDef inj))
