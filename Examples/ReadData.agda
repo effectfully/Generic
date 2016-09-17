@@ -17,7 +17,6 @@ inj = gcoerce foldD
 outj : ∀ {α β} {A : Set α} {B : ℕ -> Set β} {n xs} {y : B n} -> D′ A B y xs -> D A B y xs
 outj d = guncoerce d
 
--- Not proper constructors anymore.
 pattern c₁′ {n} y xs x = #₀  (relv n , relv y , relv xs , relv x , lrefl)
 pattern c₂′ {y} r ys   = !#₁ (relv y , r , relv ys , lrefl)
 

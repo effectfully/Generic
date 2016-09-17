@@ -463,8 +463,10 @@ explUncurryBy a f = explLam "x" $ appDef (quote id) (explArg rel (shift f) ∷ g
   go (explPi r s a b)            x = explArg r x ∷ []
   go  _                          t = []
 
-defineSimpleFun : Name -> Term -> TC _
-defineSimpleFun n t = defineFun n (clause [] t ∷ [])
+defineTerm : Name -> Term -> TC _
+defineTerm n t =
+  getType n >>= λ a ->
+  defineFun n (clause (map (implRelArg ∘ patVar ∘ named ∘ absName) (leadImpls a)) t ∷ [])
 
 -- Able to normalize a Setω.
 normalize : Term -> TC Term
@@ -480,7 +482,7 @@ getData d = getType d >>= λ ab -> getDefinition d >>= λ
            {  nothing             -> panic "getData: data"
            ; (just (a , b , acs)) -> return ∘ uncurry (packData d a b) $ splitList acs
            }
-  ; (record′ c)      -> getType c >>= λ a -> case dropPis (countPis ab) a of λ
+  ; (record′ c)      -> getType c >>= dropPis (countPis ab) >>> λ
        {  nothing  -> panic "getData: record"
        ; (just a′) -> return $ packData d ab unknown (a′ ∷ []) (c , tt)
        }

@@ -48,35 +48,44 @@ injTypeOf (packData d a b cs ns) d′ =
       avs = pisToArgVars k ab
   in appendType (implicitize ab) $ sate _↦_ (appDef d avs) (appDef d′ avs)
 
-uncoerce : Data Type -> Term
-uncoerce (packData d a b cs ns) = explLam "x" ∘ vis appDef (quote curryFoldMono) $
-  explUncurryBy b (vis appDef d (replicate (countExplPis a) unknown)) ∷ pureVar 0 ∷ unmap pureCon ns
-
--- Waits to be refactored.
-deriveEqTo : Name -> Name -> TC _
-deriveEqTo f d =
-  getType d >>= λ a ->
-  getData d >>= λ D ->
+deriveDesc : Data Type -> Name -> TC Name
+deriveDesc D d =
   freshName (showName d ++ˢ "′") >>= λ d′ ->
-  -- quoteData D >>= λ D′ -> defineSimpleFun d′ D′ -- https://github.com/agda/agda/issues/2191
+  getType d >>= λ a ->
   declareDef (explRelArg d′) a >>
-  defineSimpleFun d′ (sateMacro readData (pureDef d)) >>
-  deriveFold d >>= λ fd ->
+  d′ <$ (quoteData D >>= defineTerm d′)
+
+deriveTo : Data Type -> Name -> Name -> TC Name
+deriveTo D d′ fd =
   freshName ("to" ++ˢ showName d′) >>= λ to ->
   declareDef (explRelArg to) (toTypeOf D d′) >>
-  defineSimpleFun to (sateMacro gcoerce (pureDef fd)) >>
+  to <$ defineTerm to (sateMacro gcoerce (pureDef fd))
+
+deriveFrom : Data Type -> Name -> TC Name
+deriveFrom D d′ =
   freshName ("from" ++ˢ showName d′) >>= λ from ->
   declareDef (explRelArg from) (fromTypeOf D d′) >>
-  defineSimpleFun from (uncoerce D) >>
-  freshName (showName from ++ˢ "-" ++ˢ showName to) >>= λ from-to ->
+  from <$ defineTerm from (guncoercePure D)
+
+deriveFromTo : Data Type -> Name -> Name -> Name -> TC Name
+deriveFromTo D d′ to from =
+  freshName ("fromTo" ++ˢ showName d′) >>= λ from-to ->
   declareDef (explRelArg from-to) (fromToTypeOf D d′ to from) >>
-  defineFun from-to (fromToClausesOf D from-to) >>
-  freshName (showName d ++ˢ "Inj") >>= λ dInj ->
-  declareDef (explRelArg dInj) (injTypeOf D d′) >>
-  defineSimpleFun dInj (sate packInj (pureDef to) (pureDef from) (pureDef from-to)) >>
-  defineSimpleFun f (sate viaInj (pureDef dInj))
+  from-to <$ defineFun from-to (fromToClausesOf D from-to)
 
-open import Generic.Property.Eq
+deriveInj : Data Type -> Name -> Name -> Name -> Name -> TC Name
+deriveInj D d′ to from from-to =
+  freshName ("inj" ++ˢ showName d′) >>= λ inj ->
+  declareDef (explRelArg inj) (injTypeOf D d′) >>
+  inj <$ defineTerm inj (sate packInj (pureDef to) (pureDef from) (pureDef from-to))
 
-test : {A : Set} {{eqA : Eq A}} -> Eq (List A)
-unquoteDef test = deriveEqTo test (quote List)
+deriveEqTo : Name -> Name -> TC _
+deriveEqTo f d =
+  getData d >>= λ D ->
+  deriveDesc D d >>= λ d′ ->
+  deriveFold d >>= λ fd ->
+  deriveTo D d′ fd >>= λ to ->
+  deriveFrom D d′ >>= λ from ->
+  deriveFromTo D d′ to from >>= λ from-to ->
+  deriveInj D d′ to from from-to >>= λ inj ->
+  defineTerm f (sate viaInj (pureDef inj))

@@ -44,6 +44,12 @@ onFinalMu k a = case resType a of λ
        throw "the return type must be μ"
   }
 
+guncoercePure : Data Type -> Term
+guncoercePure (packData d a b cs ns) = explLam "x" ∘ vis appDef (quote curryFoldMono)
+  $ explUncurryBy b (vis appDef d (replicate (countExplPis a) unknown))
+  ∷ pureVar 0
+  ∷ unmap pureCon ns
+
 macro
   readData : Name -> Term -> TC _
   readData d ?r = getData d >>= quoteData >>= unify ?r
