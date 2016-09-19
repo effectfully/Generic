@@ -81,12 +81,13 @@ module Example1 where
   iid : {A : Set} {{x : A}} -> A
   iid {{x}} = x
 
-  -- Looks like Agda can't find the instance because of the implicit lambda bug.
+  -- Looks like Agda can't find the instance because of the implicit lambda bug:
+  -- `DataEq {{iid}}` doesn't work.
   test : _≟_ {{DataEq {{λ {_} -> iid}}}} arose arose ≡ yes refl
   test = refl
 
 module Example2 where
-  -- If `A` would be a parameter, then this definition is strictly positive,
+  -- If `A` is a parameter, then this definition would be strictly positive,
   -- but I intentionally make it an index, because we can't make `A` a parameter
   -- in the described version of `D`.
   {-# NO_POSITIVITY_CHECK #-}
