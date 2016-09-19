@@ -34,7 +34,7 @@ RecDescEq (rec K) = ∀ {B} {{eqB : ∀ {i} -> Eq (B i)}} -> DescEq (K B)
 
 instance
   {-# TERMINATING #-}
-  DataEq : ∀ {I D j} {{recDescEq : RecDescEq D}} -> Eq (μ {I} D j)
+  DataEq : ∀ {I} {D : RecDesc I} {j} {{recDescEq : RecDescEq D}} -> Eq (μ D j)
   DataEq {D = D} {j} = record
     { _≟_ = eqMu
     } where
@@ -78,8 +78,11 @@ module Example1 where
   arose : Rose′ ℕ
   arose = rose′ 4 (rose′ 1 (rose′ 6 [] ∷ []) ∷ rose′ 2 [] ∷ [])
 
-  -- I have no idea why Agda can't find the instance.
-  test : _≟_ {{DataEq {{λ {_} -> ℕEq , λ _ -> ListEq , _}}}} arose arose ≡ yes refl
+  iid : {A : Set} {{x : A}} -> A
+  iid {{x}} = x
+
+  -- Looks like Agda can't find the instance because of the implicit lambda bug.
+  test : _≟_ {{DataEq {{λ {_} -> iid}}}} arose arose ≡ yes refl
   test = refl
 
 module Example2 where
