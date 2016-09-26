@@ -118,14 +118,38 @@ unirrv (irrv x) = irrelevant x
 < rel > A ~> B =  A -> B
 < irr > A ~> B = .A -> B
 
-lamᵣ : ∀ {r α β} {A : Set α} {B : Set β} -> (< r > A -> B) -> < r > A ~> B
-lamᵣ {rel} f = λ x -> f (relv x)
-lamᵣ {irr} f = λ x -> f (irrv x)
+lamRel : ∀ {r α β} {A : Set α} {B : Set β} -> (< r > A -> B) -> < r > A ~> B
+lamRel {rel} f = λ x -> f (relv x)
+lamRel {irr} f = λ x -> f (irrv x)
 
 -- The laziness is intentional.
-appᵣ : ∀ {r α β} {A : Set α} {B : Set β} -> (< r > A ~> B) -> < r > A -> B
-appᵣ {rel} f rx = f (unrelv rx)
-appᵣ {irr} f rx = f (unirrv rx)
+appRel : ∀ {r α β} {A : Set α} {B : Set β} -> (< r > A ~> B) -> < r > A -> B
+appRel {rel} f rx = f (unrelv rx)
+appRel {irr} f rx = f (unirrv rx)
+
+Pi : ∀ {α β} i -> (A : Set α) -> (< relevance i > A -> Set β) -> Set (α ⊔ β)
+Pi (arg-info expl rel) A B =   (x : A)  -> B (relv x)
+Pi (arg-info expl irr) A B = . (x : A)  -> B (irrv x)
+Pi (arg-info impl rel) A B =   {x : A}  -> B (relv x)
+Pi (arg-info impl irr) A B = . {x : A}  -> B (irrv x)
+Pi (arg-info inst rel) A B =  {{x : A}} -> B (relv x)
+Pi (arg-info inst irr) A B = .{{x : A}} -> B (irrv x)
+
+lamPi : ∀ {α β} {A : Set α} i {B : < relevance i > A -> Set β} -> (∀ x -> B x) -> Pi i A B
+lamPi (arg-info expl rel) f = λ x -> f (relv x)
+lamPi (arg-info expl irr) f = λ x -> f (irrv x)
+lamPi (arg-info impl rel) f = f _
+lamPi (arg-info impl irr) f = f _
+lamPi (arg-info inst rel) f = f _
+lamPi (arg-info inst irr) f = f _
+
+appPi : ∀ {α β} {A : Set α} i {B : < relevance i > A -> Set β} -> Pi i A B -> ∀ x -> B x
+appPi (arg-info expl rel) f (relv x) = f x
+appPi (arg-info expl irr) f (irrv x) = f x
+appPi (arg-info impl rel) y (relv x) = y
+appPi (arg-info impl irr) y (irrv x) = y
+appPi (arg-info inst rel) y (relv x) = y
+appPi (arg-info inst irr) y (irrv x) = y
 
 RelEq : ∀ {α} -> Relevance -> Set α -> Set α
 RelEq rel A = Eq A

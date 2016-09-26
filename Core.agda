@@ -11,61 +11,6 @@ infixr 5 _⇒_ _⊛_
 _≤ℓ_ : Level -> Level -> Set
 α ≤ℓ β = α ⊔ β ≡ β
 
-Pi : ∀ {α β} i -> (A : Set α) -> (< relevance i > A -> Set β) -> Set (α ⊔ β)
-Pi (arg-info expl rel) A B =   (x : A)  -> B (relv x)
-Pi (arg-info expl irr) A B = . (x : A)  -> B (irrv x)
-Pi (arg-info impl rel) A B =   {x : A}  -> B (relv x)
-Pi (arg-info impl irr) A B = . {x : A}  -> B (irrv x)
-Pi (arg-info inst rel) A B =  {{x : A}} -> B (relv x)
-Pi (arg-info inst irr) A B = .{{x : A}} -> B (irrv x)
-
-lamPi : ∀ {α β} {A : Set α} i {B : < relevance i > A -> Set β} -> (∀ x -> B x) -> Pi i A B
-lamPi (arg-info expl rel) f = λ x -> f (relv x)
-lamPi (arg-info expl irr) f = λ x -> f (irrv x)
-lamPi (arg-info impl rel) f = f _
-lamPi (arg-info impl irr) f = f _
-lamPi (arg-info inst rel) f = f _
-lamPi (arg-info inst irr) f = f _
-
-appPi : ∀ {α β} {A : Set α} i {B : < relevance i > A -> Set β} -> Pi i A B -> ∀ x -> B x
-appPi (arg-info expl rel) f (relv x) = f x
-appPi (arg-info expl irr) f (irrv x) = f x
-appPi (arg-info impl rel) y (relv x) = y
-appPi (arg-info impl irr) y (irrv x) = y
-appPi (arg-info inst rel) y (relv x) = y
-appPi (arg-info inst irr) y (irrv x) = y
-
-Coerce′ : ∀ {α β} -> α ≡ β -> Set α -> Set β
-Coerce′ refl = id
-
-coerce′ : ∀ {α β} {A : Set α} -> (q : α ≡ β) -> A -> Coerce′ q A
-coerce′ refl = id
-
-uncoerce′ : ∀ {α β} {A : Set α} -> (q : α ≡ β) -> Coerce′ q A -> A
-uncoerce′ refl = id
-
-inspectUncoerce′ : ∀ {α β} {A : Set α}
-                 -> (q : α ≡ β) -> (p : Coerce′ q A) -> ∃ λ x -> p ≡ coerce′ q x
-inspectUncoerce′ refl x = x , refl
-
-split : ∀ {α β γ δ} {A : Set α} {B : A -> Set β} {C : Set γ}
-      -> (q : α ⊔ β ≡ δ) -> Coerce′ q (Σ A B) -> (∀ x -> B x -> C) -> C
-split q p g = uncurry g (uncoerce′ q p)
-
-splitWith₂ : ∀ {α β γ δ} {A : Set α} {B : A -> Set β}
-           -> (q : α ⊔ β ≡ δ)
-           -> (C : ∀ {δ} {r : α ⊔ β ≡ δ} -> Coerce′ r (Σ A B) -> Coerce′ r (Σ A B) -> Set γ)
-           -> (p₁ p₂ : Coerce′ q (Σ A B))
-           -> (∀ x₁ x₂ y₁ y₂ -> C {r = refl} (x₁ , y₁) (x₂ , y₂))
-           -> C {r = q} p₁ p₂
-splitWith₂ refl C (x₁ , y₁) (x₂ , y₂) g = g x₁ x₂ y₁ y₂
-
-data Coerce {β} : ∀ {α} -> α ≡ β -> Set α -> Set β where
-  coerce : ∀ {A} -> A -> Coerce refl A
-
-qcoerce : ∀ {α β} {A : Set α} {q : α ≡ β} -> A -> Coerce q A
-qcoerce {q = refl} = coerce
-
 mutual
   Binder : ∀ {ι} α β γ -> Arg-info -> ι ⊔ lsuc (α ⊔ β) ≡ γ -> Set ι -> Set γ
   Binder α β γ i q I = Coerce q (∃ λ (A : Set α) -> < relevance i > A -> Desc I β)

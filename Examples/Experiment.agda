@@ -29,7 +29,7 @@ DescEq (ret i) = ⊤
 DescEq (π A D) = Eq A × ∀ x -> DescEq (D x)
 DescEq (D ⊕ E) = DescEq D × DescEq E
 
-RecDescEq : ∀ {I} -> RecDesc I -> Set
+RecDescEq : ∀ {I} -> RecDesc I -> Set₁
 RecDescEq (rec K) = ∀ {B} {{eqB : ∀ {i} -> Eq (B i)}} -> DescEq (K B)
 
 instance
@@ -42,15 +42,15 @@ instance
         node-inj refl = refl
 
         eqSem : ∀ {j} D₀ D {{descEq : DescEq D}} -> IsSet (⟦ D ⟧ (μ D₀) j)
-        eqSem D₀ (ret i)                refl      refl     = yes refl
-        eqSem D₀ (π A D) {{eqA , eqD}} (x₁ , d₁) (x₂ , d₂) =
-          _≟_ {{eqA}} x₁ x₂ <,>ᵈᵒ eqSem D₀ (D x₁) {{eqD x₁}} d₁
-        eqSem D₀ (D ⊕ E) {{eqD , eqE}}  s₁        s₂       =
+        eqSem D₀ (ret i)               refl refl = yes refl
+        eqSem D₀ (π A D) {{eqA , eqD}} p₁   p₂   =
+          decProd (_≟_ {{eqA}}) (eqSem D₀ (D _) {{eqD _}}) p₁ p₂
+        eqSem D₀ (D ⊕ E) {{eqD , eqE}} s₁   s₂   =
           decSum (eqSem D₀ D {{eqD}}) (eqSem D₀ E {{eqE}}) s₁ s₂
 
         eqMu : ∀ {D} {{recDescEq : RecDescEq D}} -> IsSet (μ D j)
-        eqMu {rec K} {{recDescEq}} (node d₁) (node d₂) =
-          dcong node node-inj (eqSem D _ {{recDescEq {{DataEq {D = rec K}}}}} d₁ d₂)
+        eqMu {D@(rec K)} {{recDescEq}} (node d₁) (node d₂) =
+          dcong node node-inj (eqSem D _ {{recDescEq {{DataEq {D = D}}}}} d₁ d₂)
 
 module Example1 where
   open import Generic.Main using (deriveEqTo)
@@ -78,17 +78,17 @@ module Example1 where
   arose : Rose′ ℕ
   arose = rose′ 4 (rose′ 1 (rose′ 6 [] ∷ []) ∷ rose′ 2 [] ∷ [])
 
-  iid : {A : Set} {{x : A}} -> A
-  iid {{x}} = x
+  find : {A : Set} {{x : A}} -> A
+  find {{x}} = x
 
   -- Looks like Agda can't find the instance because of the implicit lambda bug:
-  -- `DataEq {{iid}}` doesn't work.
-  test : _≟_ {{DataEq {{λ {_} -> iid}}}} arose arose ≡ yes refl
+  -- `DataEq {{find}}` doesn't work.
+  test : _≟_ {{DataEq {{λ {_} -> find}}}} arose arose ≡ yes refl
   test = refl
 
 module Example2 where
   -- If `A` is a parameter, then this definition would be strictly positive,
-  -- but I intentionally make it an index, because we can't make `A` a parameter
+  -- but I intentionally made it an index, because we can't make `A` a parameter
   -- in the described version of `D`.
   {-# NO_POSITIVITY_CHECK #-}
   data D : Set -> Set where
@@ -110,12 +110,18 @@ module Example2 where
   D′ⁿ  0      A = A
   D′ⁿ (suc n) A = D′ (D′ⁿ n A)
 
-  D→D′ : ∀ {A} n -> D (Dⁿ n A) -> D′ (D′ⁿ n A)
-  D→D′  0      (ret x) = ret′ x
-  D→D′ (suc n) (ret r) = ret′ (D→D′  n      r)
-  D→D′  n      (rec r) = rec′ (D→D′ (suc n) r)
+  ⟨D→D′⟩ⁿ : ∀ {A} n -> D (Dⁿ n A) -> D′ (D′ⁿ n A)
+  ⟨D→D′⟩ⁿ  0      (ret x) = ret′ x
+  ⟨D→D′⟩ⁿ (suc n) (ret r) = ret′ (⟨D→D′⟩ⁿ  n      r)
+  ⟨D→D′⟩ⁿ  n      (rec r) = rec′ (⟨D→D′⟩ⁿ (suc n) r)
 
-  D′→D : ∀ {A} n -> D′ (D′ⁿ n A) -> D (Dⁿ n A)
-  D′→D  0      (ret′ x) = ret x
-  D′→D (suc n) (ret′ r) = ret (D′→D  n      r)
-  D′→D  n      (rec′ r) = rec (D′→D (suc n) r)
+  ⟨D′→D⟩ⁿ : ∀ {A} n -> D′ (D′ⁿ n A) -> D (Dⁿ n A)
+  ⟨D′→D⟩ⁿ  0      (ret′ x) = ret x
+  ⟨D′→D⟩ⁿ (suc n) (ret′ r) = ret (⟨D′→D⟩ⁿ  n      r)
+  ⟨D′→D⟩ⁿ  n      (rec′ r) = rec (⟨D′→D⟩ⁿ (suc n) r)
+
+  D→D′ : ∀ {A} -> D A -> D′ A
+  D→D′ = ⟨D→D′⟩ⁿ 0
+
+  D′→D : ∀ {A} -> D′ A -> D A
+  D′→D = ⟨D′→D⟩ⁿ 0

@@ -2,6 +2,7 @@ module Generic.Lib.Prelude where
 
 open import Generic.Lib.Intro                  public
 open import Generic.Lib.Equality.Propositional public
+open import Generic.Lib.Equality.Coerce        public
 open import Generic.Lib.Equality.Heteroindexed public
 open import Generic.Lib.Equality.Congn         public
 open import Generic.Lib.Decidable              public

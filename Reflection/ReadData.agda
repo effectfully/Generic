@@ -5,7 +5,7 @@ open import Generic.Function.FoldMono
 
 ‵π : Arg-info -> String -> Term -> Term -> Term 
 ‵π i s a b = sate π (reify i) (sate refl) ∘ sate coerce ∘ sate _,_ a $
-  appDef (quote appᵣ) (implRelArg (reify (relevance i)) ∷ explRelArg (explLam s b) ∷ [])
+  appDef (quote appRel) (implRelArg (reify (relevance i)) ∷ explRelArg (explLam s b) ∷ [])
 
 quoteHyp : Name -> ℕ -> Type -> Maybe (Maybe Term)
 quoteHyp d p   (pi s (arg i a) b) =
