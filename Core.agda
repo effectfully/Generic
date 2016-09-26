@@ -50,7 +50,7 @@ mutual
   Extend (π i q C) B j = Extendᵇ i C q B j
   Extend (D ⊛ E)   B j = ⟦ D ⟧ B × Extend E B j
 
-  Extendᵇ : ∀ {α ι β γ q} {I : Set ι} i
+  Extendᵇ : ∀ {ι α β γ q} {I : Set ι} i
           -> Binder α β γ i q I -> α ≤ℓ β -> (I -> Set β) -> I -> Set β
   Extendᵇ i (coerce (A , D)) q B j = Coerce′ q $ ∃ λ x -> Extend (D x) B j
 

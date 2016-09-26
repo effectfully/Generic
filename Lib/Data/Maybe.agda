@@ -1,6 +1,6 @@
 module Generic.Lib.Data.Maybe where
 
-open import Data.Maybe.Base using (Maybe; just; nothing; maybe; from-just) public
+open import Data.Maybe.Base using (Maybe; just; nothing; maybe; maybe′; from-just) public
 
 open import Generic.Lib.Intro
 open import Generic.Lib.Category

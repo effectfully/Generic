@@ -13,14 +13,14 @@ mutual
   ExtendEq (π i q C) = ExtendEqᵇ i C q
   ExtendEq (D ⊛ E)   = SemEq D × ExtendEq E
 
-  ExtendEqᵇ : ∀ {α ι β γ q} {I : Set ι} i -> Binder α β γ i q I -> α ≤ℓ β -> Set β
+  ExtendEqᵇ : ∀ {ι α β γ q} {I : Set ι} i -> Binder α β γ i q I -> α ≤ℓ β -> Set β
   ExtendEqᵇ (arg-info v r) (coerce (A , D)) q = Coerce′ q $ RelEq r A × ∀ {x} -> ExtendEq (D x)
 
 instance
   {-# TERMINATING #-} -- Why?
   DataEq : ∀ {i β} {I : Set i} {D : Data (Desc I β)} {j}
              {{eqD : All ExtendEq (consTypes D)}} -> Eq (μ D j)
-  DataEq {ι} {β = β} {I = I} {D = D₀} = record { _≟_ = decMu } where
+  DataEq {ι} {β} {I} {D₀} = record { _≟_ = decMu } where
     mutual
       decSem : ∀ D {{eqD : SemEq D}} -> IsSet (⟦ D ⟧ (μ D₀))
       decSem (var i)                 d₁ d₂ = decMu d₁ d₂

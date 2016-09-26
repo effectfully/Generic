@@ -27,7 +27,7 @@ mutual
   Hyp         C (π i q D)  f      = Hypᵇ i C D f
   Hyp         C (D ⊛ E)   (x , y) = Hyp C D x × Hyp C E y
 
-  Hypᵇ : ∀ {α ι β γ δ q q′} {I : Set ι} {B} i
+  Hypᵇ : ∀ {ι α β γ δ q q′} {I : Set ι} {B} i
        -> (∀ {i} -> B i -> Set γ) -> (D : Binder α β δ i q′ I) -> ⟦ i / D ⟧ᵇ q B -> Set (β ⊔ γ)
   Hypᵇ {γ = γ} {q = q} i C (coerce (A , D)) f =
     Coerce′ (cong (γ ⊔_) q) $ Pi i A λ x -> Hyp C (D x) (appPi i (uncoerce′ q f) x)
@@ -44,7 +44,7 @@ mutual
   ... | yes-var = ∀ {x} -> C x -> Elim C E (k ∘ _,_ x)
   ... | no-var  = ∀ {x} -> Hyp C D x -> Elim C E (k ∘ _,_ x)
 
-  Elimᵇ : ∀ {α ι β γ δ q q′} {I : Set ι} {B} i
+  Elimᵇ : ∀ {ι α β γ δ q q′} {I : Set ι} {B} i
         -> (∀ {i} -> B i -> Set γ)
         -> (D : Binder α β δ i q′ I)
         -> (∀ {j} -> Extendᵇ i D q B j -> B j)
