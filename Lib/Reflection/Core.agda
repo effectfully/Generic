@@ -108,6 +108,15 @@ mutual
     relv :  A -> < rel > A
     irrv : .A -> < irr > A
 
+elimRelValue : ∀ {r α π} {A : Set α}
+             -> (P : ∀ {r} -> < r > A -> Set π)
+             -> (∀  x -> P (relv x))
+             -> (∀ .x -> P (irrv x))
+             -> (x : < r > A)
+             -> P x
+elimRelValue P f g (relv x) = f x
+elimRelValue P f g (irrv x) = g x
+
 unrelv : ∀ {α} {A : Set α} -> < rel > A -> A
 unrelv (relv x) = x
 
