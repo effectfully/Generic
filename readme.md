@@ -1,6 +1,6 @@
 # Generic
 
-It's a library for doing generic programming in Agda. The repository is under reconstruction currently.
+It's a library for doing generic programming in Agda.
 
 # A quick taste
 
@@ -140,14 +140,6 @@ inj = gcoerce foldD
       (appDef (quote _⊔_)
        (explRelArg (pureVar 5) ∷ explRelArg (pureVar 6) ∷ [])))))
  -- consTypes
-   (implDPi ℕ
-    (λ rx →
-       explDPi (B (unrelv rx))
-       (λ rx₁ →
-          explDPi (List ℕ)
-          (λ rx₂ →
-             explDPi A (λ rx₃ → var (unrelv rx , unrelv rx₁ , unrelv rx₂)))))
-    ∷
    (implRelDPi ℕ
     (λ rx →
        explRelDPi (B (unrelv rx))
