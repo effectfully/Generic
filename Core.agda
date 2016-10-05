@@ -23,16 +23,26 @@ mutual
         -> Desc I β
     _⊛_ : Desc I β -> Desc I β -> Desc I β
 
-pattern explDPi A D = π (arg-info expl rel) refl (coerce (A , D))
-pattern implDPi A D = π (arg-info impl rel) refl (coerce (A , D))
-pattern instDPi A D = π (arg-info inst rel) refl (coerce (A , D))
+pattern DPi i A D = π i refl (coerce (A , D))
 
-{-# DISPLAY π (arg-info expl rel) refl (coerce (A , D)) = explDPi A D #-}
-{-# DISPLAY π (arg-info impl rel) refl (coerce (A , D)) = implDPi A D #-}
-{-# DISPLAY π (arg-info inst rel) refl (coerce (A , D)) = instDPi A D #-}
+{-# DISPLAY π i refl (coerce (A , D)) = DPi i A D #-}
+
+pattern explRelDPi A D = DPi explRelInfo A D
+pattern explIrrDPi A D = DPi explIrrInfo A D
+pattern implRelDPi A D = DPi implRelInfo A D
+pattern implIrrDPi A D = DPi implIrrInfo A D
+pattern instRelDPi A D = DPi instRelInfo A D
+pattern instIrrDPi A D = DPi instIrrInfo A D
+
+{-# DISPLAY DPi explRelInfo A D = explRelDPi A D #-}
+{-# DISPLAY DPi explIrrInfo A D = explIrrDPi A D #-}
+{-# DISPLAY DPi implRelInfo A D = implRelDPi A D #-}
+{-# DISPLAY DPi implIrrInfo A D = implIrrDPi A D #-}
+{-# DISPLAY DPi instRelInfo A D = instRelDPi A D #-}
+{-# DISPLAY DPi instIrrInfo A D = instIrrDPi A D #-}
 
 _⇒_ : ∀ {ι α β} {I : Set ι} {{q : α ≤ℓ β}} -> Set α -> Desc I β -> Desc I β
-_⇒_ {{q}} A D = π (arg-info expl rel) q (qcoerce (A , λ _ -> D))
+_⇒_ {{q}} A D = π (explRelInfo) q (qcoerce (A , λ _ -> D))
 
 mutual
   ⟦_⟧ : ∀ {ι β} {I : Set ι} -> Desc I β -> (I -> Set β) -> Set β

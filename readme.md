@@ -40,13 +40,15 @@ Descriptions of constructors are defined as follows:
 
 ```
 mutual
-  Binder : ∀ {ι} α β γ -> ι ⊔ lsuc (α ⊔ β) ≡ γ -> Set ι -> Set γ
-  Binder α β γ q I = Coerce q (∃ λ (A : Set α) -> A -> Desc I β)
+  Binder : ∀ {ι} α β γ -> Arg-info -> ι ⊔ lsuc (α ⊔ β) ≡ γ -> Set ι -> Set γ
+  Binder α β γ i q I = Coerce q (∃ λ (A : Set α) -> < relevance i > A -> Desc I β)
 
   data Desc {ι} (I : Set ι) β : Set (ι ⊔ lsuc β) where
     var : I -> Desc I β
-    π   : ∀ {α}
-        -> (q : α ≤ℓ β) -> Visibility -> Binder α β _ (cong (λ αβ -> ι ⊔ lsuc αβ) q) I -> Desc I β
+    π   : ∀ {α} i
+        -> (q : α ≤ℓ β)
+        -> Binder α β _ i (cong (λ αβ -> ι ⊔ lsuc αβ) q) I
+        -> Desc I β
     _⊛_ : Desc I β -> Desc I β -> Desc I β
 ```
 
@@ -78,8 +80,8 @@ data D {α β} (A : Set α) (B : ℕ -> Set β) : ∀ {n} -> B n -> List ℕ -> 
 D′ : ∀ {α β} (A : Set α) (B : ℕ -> Set β) {n} -> B n -> List ℕ -> Set (α ⊔ β)
 D′ = readData D
 
-pattern c₁′ {n} y xs x = #₀  (n , y , xs , x , lrefl)
-pattern c₂′ {y} r ys   = !#₁ (y , r , ys , lrefl)
+pattern c₁′ {n} y xs x = #₀  (relv n , relv y , relv xs , relv x , lrefl)
+pattern c₂′ {y} r ys   = !#₁ (relv y , r , irrv ys , lrefl)
 
 inj : ∀ {α β} {A : Set α} {B : ℕ -> Set β} {n xs} {y : B n} -> D A B y xs -> D′ A B y xs
 inj (c₁ y xs x) = c₁′ y xs x
@@ -90,7 +92,7 @@ outj (c₁′ y xs x) = c₁ y xs x
 outj (c₂′ r ys)   = c₂ (λ y -> outj (r y)) ys
 ```
 
-So universe polymorphism is fully supported, as well as implicit and instance arguments, multiple (including single or none) parameters and indices, higher-order inductive occurrences and you can define functions over described data types just like over the actual ones (though, [pattern synonyms are not equal in power to proper constructors](https://github.com/agda/agda/issues/2069)).
+So universe polymorphism is fully supported, as well as implicit and instance arguments, multiple (including single or none) parameters and indices, irrelevance (partly), higher-order inductive occurrences and you can define functions over described data types just like over the actual ones (though, [pattern synonyms are not equal in power to proper constructors](https://github.com/agda/agda/issues/2069)).
 
 There is a generic procedure that allows to coerce elements of described data type to elements of the corresponding regular data types, e.g. `outj` can be defined as
 
@@ -115,50 +117,56 @@ inj = gcoerce foldD
 `D′` computes to the following term:
 
 ```
-λ {α} {β} A B {n} z z₁ →
+λ {.α} {.β} A B {n} z z₁ →
   μ
   (packData
-  -- dataName
-  (quote D)
-  -- paramsType
-   (rpi (iarg (def (quote Level) []))
-    (abs "α"
-     (rpi (iarg (def (quote Level) []))
-      (abs "β"
-       (rpi (earg (sort (set (rvar 1 []))))
-        (abs "A"
-         (rpi
-          (earg
-           (rpi (earg (def (quote ℕ) [])) (abs "_" (sort (set (rvar 2 []))))))
-          (abs "B" unknown))))))))
-  -- indicesType
-   (rpi (iarg (def (quote ℕ) []))
-    (abs "n"
-     (rpi (earg (rvar 1 (earg (rvar 0 []) ∷ [])))
-      (abs "_"
-       (rpi
-        (earg
-         (def (quote List)
-          (iarg (def (quote lzero) []) ∷ earg (def (quote ℕ) []) ∷ [])))
-        (abs "_"
-         (sort
-          (set
-           (def (quote _⊔_)
-            (earg (rvar 5 []) ∷ earg (rvar 6 []) ∷ []))))))))))
-  -- constructors 
-   (ipi ℕ
-    (λ n₁ →
-       pi (B n₁)
-       (λ y → pi (List ℕ) (λ xs → pi A (λ z₂ → var (n₁ , y , xs)))))
+ -- dataName
+   (quote D)
+ -- parsTele
+   (implRelPi (pureDef (quote Level)) "α"
+    (implRelPi (pureDef (quote Level)) "β"
+     (explRelPi (sort (set (pureVar 1))) "A"
+      (explRelPi (pureDef (quote ℕ) ‵→ sort (set (pureVar 2))) "B"
+       unknown))))
+ -- indsTele
+   (implRelPi (pureDef (quote ℕ)) "n"
+    (appVar 1 (explRelArg (pureVar 0) ∷ []) ‵→
+     appDef (quote List)
+     (implRelArg (pureDef (quote lzero)) ∷
+      explRelArg (pureDef (quote ℕ)) ∷ [])
+     ‵→
+     sort
+     (set
+      (appDef (quote _⊔_)
+       (explRelArg (pureVar 5) ∷ explRelArg (pureVar 6) ∷ [])))))
+ -- consTypes
+   (implDPi ℕ
+    (λ rx →
+       explDPi (B (unrelv rx))
+       (λ rx₁ →
+          explDPi (List ℕ)
+          (λ rx₂ →
+             explDPi A (λ rx₃ → var (unrelv rx , unrelv rx₁ , unrelv rx₂)))))
     ∷
-    ipi (B 0)
-    (λ y →
-       ipi ℕ
-       (λ n₁ →
-          pi (B n₁) (λ y₁ → iipi (List ℕ) (λ xs → var (n₁ , y₁ , xs))))
-       ⊛ pi (List A) (λ z₂ → var (0 , y , [])))
+   (implRelDPi ℕ
+    (λ rx →
+       explRelDPi (B (unrelv rx))
+       (λ rx₁ →
+          explRelDPi (List ℕ)
+          (λ rx₂ →
+             explRelDPi A (λ rx₃ → var (unrelv rx , unrelv rx₁ , unrelv rx₂)))))
+    ∷
+    implRelDPi (B 0)
+    (λ rx →
+       implRelDPi ℕ
+       (λ rx₁ →
+          explRelDPi (B (unrelv rx₁))
+          (λ rx₂ →
+             instRelDPi (List ℕ)
+             (λ rx₃ → var (unrelv rx₁ , unrelv rx₂ , unrelv rx₃))))
+       ⊛ explIrrDPi (List A) (λ rx₁ → var (0 , unrelv rx , [])))
     ∷ [])
-  -- consNames  
+ -- consNames
    (quote c₁ , quote c₂ , tt))
   (n , z , z₁)
 ```
@@ -218,16 +226,12 @@ There are also generic `elim` in [`Function/Elim.agda`](Function/Elim.agda) (the
 
 - No inductive-inductive or inductive-recursive data types. The latter [can be done](https://github.com/effectfully/random-stuff/blob/master/Desc/IRDesc.agda) at the cost of complicating the encoding.
 
-- No irrelevance. I'll maybe try to fix this latter.
-
 - No coinduction.
 
-- You can't describe a non-strictly-positive data type. Yes, I think it's a limitation.
+- You can't describe a non-strictly positive data type. Yes, I think it's a limitation. I have [an idea](http://effectfully.blogspot.ru/2016/10/insane-descriptions.html) about how non-strictly positive and inductive-inductive data types can be described (it doesn't give you a way to define safe things safely, but this probably can be added).
 
 - Records can be described (see [`Examples/Data/Product.agda`](Examples/Data/Product.agda`)), but η-laws don't hold for them, because constructors contain `lift refl : tt ≡ tt` and `(p q : tt ≡ tt) -> p ≡ q` doesn't hold definitionally. `μ` is also a `data` rather than `record` (records confuse the termination checker, though, there are `{-# TERMINATING #-}` pragmas anyway), so this breaks η-expansion too.
 
 - Ornaments may or may not appear later (in the way described in [Unbiased ornaments](http://effectfully.blogspot.com/2016/07/unbiased-ornaments.html)). I don't find them very vital currently.
 
 - No forcing of indices. [`Lift`](Examples/Data/Lift.agda) can be described, though.
-
-- Reflection-related code begs for refactoring.

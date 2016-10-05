@@ -25,7 +25,7 @@ fromToClausesOf (packData d a b cs ns) f = unmap (λ {a} -> clauseOf a) ns where
     each = λ m i -> maybe (proj₂ >>> λ j -> pureVar (k ∸ suc j)) (pureVar (i + k)) m
     args = map (uncurry each) mxs
     grow = lams (vis appCon n args)
-    rs   = mapMaybe (uncurry λ m i -> vis₁ appDef f (pureVar i) <$ m) mxs
+    rs   = mapMaybe (uncurry λ m i -> vis# 1 appDef f (pureVar i) <$ m) mxs
     rhs  = vis appDef (quote congn) $ reify k ∷ grow ∷ rs
 
 toTypeOf : Data Type -> Name -> Type
@@ -39,7 +39,7 @@ fromTypeOf (packData d a b cs ns) d′ = let ab = appendType a b; k  = countPis 
 fromToTypeOf : Data Type -> Name -> Name -> Name -> Type
 fromToTypeOf (packData d a b cs ns) d′ to from = let ab = appendType a b; k = countPis ab in
   appendType (implicitize ab) ∘ pi "x" (explRelArg (appDef d (pisToArgVars k ab))) $
-    sate _≡_ (vis₁ appDef from (vis₁ appDef to (pureVar 0))) (pureVar 0)
+    sate _≡_ (vis# 1 appDef from (vis# 1 appDef to (pureVar 0))) (pureVar 0)
 
 injTypeOf : Data Type -> Name -> Type
 injTypeOf (packData d a b cs ns) d′ =

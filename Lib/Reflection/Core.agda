@@ -48,13 +48,35 @@ pattern pureMeta m = appMeta m []
 {-# DISPLAY appDef  f [] = pureDef  f #-}
 {-# DISPLAY appMeta m [] = pureMeta m #-}
 
-pattern explArg r x = arg (arg-info expl r) x
-pattern implArg r x = arg (arg-info impl r) x
-pattern instArg r x = arg (arg-info inst r) x
+pattern explInfo r = arg-info expl r
+pattern implInfo r = arg-info impl r
+pattern instInfo r = arg-info inst r
 
-{-# DISPLAY arg (arg-info expl r) = explArg r #-}
-{-# DISPLAY arg (arg-info impl r) = implArg r #-}
-{-# DISPLAY arg (arg-info inst r) = instArg r #-}
+{-# DISPLAY arg-info expl r = explInfo r #-}
+{-# DISPLAY arg-info impl r = implInfo r #-}
+{-# DISPLAY arg-info inst r = instInfo r #-}
+
+pattern explRelInfo = explInfo rel
+pattern explIrrInfo = explInfo irr
+pattern implRelInfo = implInfo rel
+pattern implIrrInfo = implInfo irr
+pattern instRelInfo = instInfo rel
+pattern instIrrInfo = instInfo irr
+
+{-# DISPLAY explInfo rel = explRelInfo #-}
+{-# DISPLAY explInfo irr = explIrrInfo #-}
+{-# DISPLAY implInfo rel = implRelInfo #-}
+{-# DISPLAY implInfo irr = implIrrInfo #-}
+{-# DISPLAY instInfo rel = instRelInfo #-}
+{-# DISPLAY instInfo irr = instIrrInfo #-}
+
+pattern explArg r x = arg (explInfo r) x
+pattern implArg r x = arg (implInfo r) x
+pattern instArg r x = arg (instInfo r) x
+
+{-# DISPLAY arg (explInfo r) = explArg r #-}
+{-# DISPLAY arg (implInfo r) = implArg r #-}
+{-# DISPLAY arg (instInfo r) = instArg r #-}
 
 pattern explRelArg x = explArg rel x
 pattern implRelArg x = implArg rel x
@@ -77,12 +99,18 @@ pattern instPi r s a b = pi s (instArg r a) b
 {-# DISPLAY pi (instArg r a) s b = instPi r s a b #-}
 
 pattern explRelPi s a b = explPi rel a s b
+pattern explIrrPi s a b = explPi irr a s b
 pattern implRelPi s a b = implPi rel a s b
+pattern implIrrPi s a b = implPi irr a s b
 pattern instRelPi s a b = instPi rel a s b
+pattern instIrrPi s a b = instPi irr a s b
 
 {-# DISPLAY explPi rel a s b = explRelPi s a b #-}
+{-# DISPLAY explPi irr a s b = explIrrPi s a b #-}
 {-# DISPLAY implPi rel a s b = implRelPi s a b #-}
+{-# DISPLAY implPi irr a s b = implIrrPi s a b #-}
 {-# DISPLAY instPi rel a s b = instRelPi s a b #-}
+{-# DISPLAY instPi irr a s b = instIrrPi s a b #-}
 
 pattern lam v s t = absLam v (abs s t)
 
@@ -137,28 +165,28 @@ appRel {rel} f rx = f (unrelv rx)
 appRel {irr} f rx = f (unirrv rx)
 
 Pi : ∀ {α β} i -> (A : Set α) -> (< relevance i > A -> Set β) -> Set (α ⊔ β)
-Pi (arg-info expl rel) A B =   (x : A)  -> B (relv x)
-Pi (arg-info expl irr) A B = . (x : A)  -> B (irrv x)
-Pi (arg-info impl rel) A B =   {x : A}  -> B (relv x)
-Pi (arg-info impl irr) A B = . {x : A}  -> B (irrv x)
-Pi (arg-info inst rel) A B =  {{x : A}} -> B (relv x)
-Pi (arg-info inst irr) A B = .{{x : A}} -> B (irrv x)
+Pi explRelInfo A B =   (x : A)  -> B (relv x)
+Pi explIrrInfo A B = . (x : A)  -> B (irrv x)
+Pi implRelInfo A B =   {x : A}  -> B (relv x)
+Pi implIrrInfo A B = . {x : A}  -> B (irrv x)
+Pi instRelInfo A B =  {{x : A}} -> B (relv x)
+Pi instIrrInfo A B = .{{x : A}} -> B (irrv x)
 
 lamPi : ∀ {α β} {A : Set α} i {B : < relevance i > A -> Set β} -> (∀ x -> B x) -> Pi i A B
-lamPi (arg-info expl rel) f = λ x -> f (relv x)
-lamPi (arg-info expl irr) f = λ x -> f (irrv x)
-lamPi (arg-info impl rel) f = f _
-lamPi (arg-info impl irr) f = f _
-lamPi (arg-info inst rel) f = f _
-lamPi (arg-info inst irr) f = f _
+lamPi explRelInfo f = λ x -> f (relv x)
+lamPi explIrrInfo f = λ x -> f (irrv x)
+lamPi implRelInfo f = f _
+lamPi implIrrInfo f = f _
+lamPi instRelInfo f = f _
+lamPi instIrrInfo f = f _
 
 appPi : ∀ {α β} {A : Set α} i {B : < relevance i > A -> Set β} -> Pi i A B -> ∀ x -> B x
-appPi (arg-info expl rel) f (relv x) = f x
-appPi (arg-info expl irr) f (irrv x) = f x
-appPi (arg-info impl rel) y (relv x) = y
-appPi (arg-info impl irr) y (irrv x) = y
-appPi (arg-info inst rel) y (relv x) = y
-appPi (arg-info inst irr) y (irrv x) = y
+appPi explRelInfo f (relv x) = f x
+appPi explIrrInfo f (irrv x) = f x
+appPi implRelInfo y (relv x) = y
+appPi implIrrInfo y (irrv x) = y
+appPi instRelInfo y (relv x) = y
+appPi instIrrInfo y (irrv x) = y
 
 RelEq : ∀ {α} -> Relevance -> Set α -> Set α
 RelEq rel A = Eq A
@@ -167,24 +195,8 @@ RelEq irr A = ⊤
 vis : {A : Set} -> (A -> List (Arg Term) -> Term) -> A -> List Term -> Term
 vis k x = k x ∘ map explRelArg
 
-vis₀ : {A : Set} -> (A -> List (Arg Term) -> Term) -> A -> Term
-vis₀ k x = vis k x []
-
-vis₁ : {A : Set} -> (A -> List (Arg Term) -> Term) -> A -> Term -> Term
-vis₁ k f x₁ = vis k f (x₁ ∷ [])
-
-vis₂ : {A : Set} -> (A -> List (Arg Term) -> Term) -> A -> Term -> Term -> Term
-vis₂ k f x₁ x₂ = vis k f (x₁ ∷ x₂ ∷ [])
-
-vis₃ : {A : Set} -> (A -> List (Arg Term) -> Term) -> A -> Term -> Term -> Term -> Term
-vis₃ k f x₁ x₂ x₃ = vis k f (x₁ ∷ x₂ ∷ x₃ ∷ [])
-
-vis₄ : {A : Set} -> (A -> List (Arg Term) -> Term) -> A -> Term -> Term -> Term -> Term -> Term
-vis₄ k f x₁ x₂ x₃ x₄ = vis k f (x₁ ∷ x₂ ∷ x₃ ∷ x₄ ∷ [])
-
-vis₅ : {A : Set}
-     -> (A -> List (Arg Term) -> Term) -> A -> Term -> Term -> Term -> Term -> Term -> Term
-vis₅ k f x₁ x₂ x₃ x₄ x₅ = vis k f (x₁ ∷ x₂ ∷ x₃ ∷ x₄ ∷ x₅ ∷ [])
+vis# : ∀ {A : Set} n -> (A -> List (Arg Term) -> Term) -> A -> N-ary n Term Term
+vis# n k = listCurryⁿ n ∘ vis k
 
 isRelevant : Relevance -> Bool
 isRelevant rel = true
@@ -330,6 +342,7 @@ lastType : Type -> Type
 lastType (pi s a b) = lastType b
 lastType  b         = b
 
+-- These two should return just `Type` like everything else.
 takePis : ℕ -> Type -> Maybe Type
 takePis  0       a         = just unknown
 takePis (suc n) (pi s a b) = pi s a <$> takePis n b
@@ -405,7 +418,7 @@ macro
   sate : Name -> Term -> TC _
   sate f ?r =
     getType f >>= λ a ->
-    let res = λ app -> quoteTC (listCurryⁿ (countExplPis a) (vis app f)) >>= unify ?r in
+    let res = λ app -> quoteTC (vis# (countExplPis a) app f) >>= unify ?r in
     getDefinition f >>= λ
       { (constructor′ _) -> res appCon
       ;  _               -> res appDef
@@ -414,7 +427,7 @@ macro
   sateMacro : Name -> Term -> TC _
   sateMacro f ?r =
     getType f >>= λ a ->
-    quoteTC (listCurryⁿ (pred (countExplPis a)) (vis appDef f)) >>= unify ?r
+    quoteTC (vis# (pred (countExplPis a)) appDef f) >>= unify ?r
 
 _·_ : Term -> Term -> Term
 _·_ = sate _$_
