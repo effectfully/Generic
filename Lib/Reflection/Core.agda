@@ -4,6 +4,7 @@ open import Reflection
   renaming (visible to expl; hidden to impl; instance′ to inst;
     relevant to rel; irrelevant to irr; pi to absPi; lam to absLam; def to appDef)
   hiding (var; con; meta; _≟_) public
+open import Agda.Builtin.Reflection using (withNormalisation) public
 open Term    using () renaming (var to appVar; con to appCon; meta to appMeta) public
 open Pattern using () renaming (var to patVar; con to patCon) public
 open Literal using () renaming (meta to litMeta) public
@@ -435,11 +436,13 @@ _·_ = sate _$_
 unshift′ : Term -> Term
 unshift′ t = explLam "_" t · sate tt₀
 
+-- A note for myself: `foldℕ (sate lsuc) (sate lzero) n` is not `reify n`:
+-- it's damn `lsuc` -- not `suc`.
 termLevelOf : Term -> Maybe Term
 termLevelOf (sort (set t)) = just t
 termLevelOf (sort (lit n)) = just (foldℕ (sate lsuc) (sate lzero) n)
 termLevelOf (sort unknown) = just unknown
-termLevelOf  _             = nothing
+termLevelOf _ = nothing
 
 instance
   TermReify : Reify Term
@@ -499,7 +502,6 @@ instance
         go  []       tt      = sate tt₀
         go (x ∷ xs) (y , ys) = sate _,_ (reify {{bReify}} y) (go xs ys)
 
-
 toTuple : List Term -> Term
 toTuple = foldr₁ (sate _,_) (sate tt₀)
 
@@ -528,15 +530,21 @@ normalize (pi s (arg i a) b) =
   pi s ∘ arg i <$> normalize a <*> extendContext (arg i a) (normalize b)
 normalize  t                 = normalise t
 
+getNormType : Name -> TC Type
+getNormType = getType >=> normalize
+
+inferNormType : Term -> TC Type
+inferNormType = inferType >=> normalize
+
 getData : Name -> TC (Data Type)
-getData d = getType d >>= λ ab -> getDefinition d >>= λ
+getData d = getNormType d >>= λ ab -> getDefinition d >>= λ
   { (data-type p cs) ->
-       mapM (λ c -> _,_ c ∘ dropPis p <$> (getType c >>= normalize)) cs >>= λ mans ->
+       mapM (λ c -> _,_ c ∘ dropPis p <$> getNormType c) cs >>= λ mans ->
          case takePis p ab ⊗ (dropPis p ab ⊗ (mapM (uncurry λ c ma -> flip _,_ c <$> ma) mans)) of λ
            {  nothing             -> panic "getData: data"
            ; (just (a , b , acs)) -> return ∘ uncurry (packData d a b) $ splitList acs
            }
-  ; (record′ c)      -> getType c >>= dropPis (countPis ab) >>> λ
+  ; (record′ c)      -> getNormType c >>= dropPis (countPis ab) >>> λ
        {  nothing  -> panic "getData: record"
        ; (just a′) -> return $ packData d (initType ab) (lastType ab) (a′ ∷ []) (c , tt)
        }
@@ -545,4 +553,7 @@ getData d = getType d >>= λ ab -> getDefinition d >>= λ
 
 macro
   TypeOf : Term -> Term -> TC _
-  TypeOf t ?r = inferType t >>= unify ?r
+  TypeOf t ?r = inferNormType t >>= unify ?r
+
+  runTC : ∀ {α} {A : Set α} -> TC A -> Term -> TC _
+  runTC a ?r = bindTC a quoteTC >>= unify ?r

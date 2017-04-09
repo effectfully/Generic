@@ -22,7 +22,11 @@ module DeriveEqVec where
   test₁ : xs ≟ xs ≡ yes refl
   test₁ = refl
 
-  test₂ : xs ≟ (2 ∷ᵥ 4 ∷ᵥ 2 ∷ᵥ []ᵥ) ≡ no _
+  -- Makes Agda loop?
+  -- test₂ : xs ≟ (2 ∷ᵥ 4 ∷ᵥ 2 ∷ᵥ []ᵥ) ≡ no _
+  -- test₂ = refl
+
+  test₂ : xs == (2 ∷ᵥ 4 ∷ᵥ 2 ∷ᵥ []ᵥ) ≡ false
   test₂ = refl
 
 module DeriveEqD where
@@ -36,7 +40,7 @@ module DeriveEqD where
                    {{aEq : Eq A}} {{bEq : ∀ {x} -> Eq (B x)}} -> Eq (D A B ys m)
   unquoteDef DEq = deriveEqTo DEq (quote D)
 
--- -- Seems like the problem is that irrelevance and meta-variables resolution do not play well.
+-- -- Seems like the problem is that irrelevance and metavariables resolution do not play well.
 -- module DeriveEqE where
 --   data E {α} (A : Set α) : ∀ {n} -> .(Vec A n) -> Set α where
 --     c₁ : ∀ {n} -> .(xs : Vec A n) -> E A xs

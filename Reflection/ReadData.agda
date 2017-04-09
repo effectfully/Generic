@@ -55,7 +55,7 @@ macro
   readData d ?r = getData d >>= quoteData >>= unify ?r
 
   gcoerce : Name -> Term -> TC _
-  gcoerce fd ?r = inferType ?r >>= onFinalMu λ{ D@(packData _ _ b _ _) ->
+  gcoerce fd ?r = inferNormType ?r >>= onFinalMu λ{ D@(packData _ _ b _ _) ->
       quoteTC (μ D) >>= λ μD ->
       traverseAll quoteTC (allCons D) >>= λ cs′ ->
       unify ?r $ vis appDef fd (curryBy b μD ∷ allToList cs′)
