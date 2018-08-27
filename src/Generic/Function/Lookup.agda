@@ -1,4 +1,4 @@
--- Under reconstruction.
+-- Under reconstruction and does not type check.
 
 module Generic.Function.Lookup where
 

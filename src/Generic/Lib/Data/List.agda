@@ -12,7 +12,7 @@ open import Generic.Lib.Data.Maybe
 open import Generic.Lib.Data.Sum
 open import Generic.Lib.Data.Product
 
-import Data.List as List
+import Data.List.Categorical as List
 
 infix 4 _∈_
 
@@ -24,10 +24,6 @@ foldr₁ f z (x ∷ y ∷ xs) = f x (foldr₁ f z (y ∷ xs))
 mapInd : ∀ {α β} {A : Set α} {B : Set β} -> (ℕ -> A -> B) -> List A -> List B
 mapInd f  []      = []
 mapInd f (x ∷ xs) = f 0 x ∷ mapInd (f ∘ suc) xs
-
-mapMaybe : ∀ {α β} {A : Set α} {B : Set β} -> (A -> Maybe B) -> List A -> List B
-mapMaybe f  []      = []
-mapMaybe f (x ∷ xs) = maybe (_∷ mapMaybe f xs) (mapMaybe f xs) (f x)
 
 mapM : ∀ {α β} {A : Set α} {B : Set β} {M : Set β -> Set β} {{mMonad : RawMonad M}}
      -> (A -> M B) -> List A -> M (List B)

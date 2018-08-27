@@ -491,7 +491,7 @@ instance
   ListReify : ∀ {α} {A : Set α} {{aReify : Reify A}} -> Reify (List A)
   ListReify = record
     { reify = foldr (sate _∷_ ∘ reify) (sate [])
-    }  
+    }
 
   AllReify : ∀ {α β} {A : Set α} {B : A -> Set β} {xs} {{bReify : ∀ {x} -> Reify (B x)}}
            -> Reify (All B xs)
@@ -544,7 +544,7 @@ getData d = getNormType d >>= λ ab -> getDefinition d >>= λ
            {  nothing             -> panic "getData: data"
            ; (just (a , b , acs)) -> return ∘ uncurry (packData d a b) $ splitList acs
            }
-  ; (record′ c)      -> getNormType c >>= dropPis (countPis ab) >>> λ
+  ; (record′ c _)    -> getNormType c >>= dropPis (countPis ab) >>> λ
        {  nothing  -> panic "getData: record"
        ; (just a′) -> return $ packData d (initType ab) (lastType ab) (a′ ∷ []) (c , tt)
        }

@@ -1,6 +1,6 @@
 module Generic.Lib.Data.Nat where
 
-open import Data.Nat.Base hiding (_⊔_; _≟_; fold) public
+open import Data.Nat.Base hiding (_⊔_; _≟_; _^_) public
 
 open import Generic.Lib.Decidable
 
