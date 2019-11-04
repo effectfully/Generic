@@ -3,7 +3,7 @@ module Generic.Lib.Reflection.Core where
 open import Reflection
   renaming (visible to expl; hidden to impl; instance′ to inst;
     relevant to rel; irrelevant to irr; pi to absPi; lam to absLam; def to appDef)
-  hiding (var; con; meta; _≟_) public
+  hiding (var; con; meta; _≟_; return; _>>=_; _>>_) public
 open import Agda.Builtin.Reflection using (withNormalisation) public
 open Term    using () renaming (var to appVar; con to appCon; meta to appMeta) public
 open Pattern using () renaming (var to patVar; con to patCon) public
@@ -26,7 +26,7 @@ infixr 5 _‵→_
 infixl 3 _·_
 
 listCurryⁿ : ∀ {α β} {A : Set α} {B : Set β} n -> (List A -> B) -> N-ary n A B
-listCurryⁿ n f = curryⁿ {n} (f ∘ toList)
+listCurryⁿ n f = curryⁿ {n = n} (f ∘ toList)
 
 named : String -> String
 named s = if s == "_" then "x" else s
@@ -127,7 +127,8 @@ pattern instLam s t = lam inst s t
 
 pattern _‵→_ a b = pi "_" (explRelArg a) b
 
-{-# DISPLAY pi "_" (explRelArg a) b = a ‵→ b #-}
+-- No longer parses for whatever reason.
+-- {-# DISPLAY pi "_" (explRelArg a) b = a ‵→ b #-}
 
 mutual
   <_>_ : ∀ {α} -> Relevance -> Set α -> Set α
@@ -149,8 +150,10 @@ elimRelValue P f g (irrv x) = g x
 unrelv : ∀ {α} {A : Set α} -> < rel > A -> A
 unrelv (relv x) = x
 
-.unirrv : ∀ {α} {A : Set α} -> < irr > A -> A
-unirrv (irrv x) = irrelevant x
+-- Is it possible to handle this in some other way that doesn't require a postulate?
+-- See the `appRel` function below. Or is the postulate fine?
+postulate
+  .unirrv : ∀ {α} {A : Set α} -> < irr > A -> A
 
 <_>_~>_ : ∀ {α β} -> Relevance -> Set α -> Set β -> Set (α ⊔ β)
 < rel > A ~> B =  A -> B
@@ -186,8 +189,8 @@ appPi explRelInfo f (relv x) = f x
 appPi explIrrInfo f (irrv x) = f x
 appPi implRelInfo y (relv x) = y
 appPi implIrrInfo y (irrv x) = y
-appPi instRelInfo y (relv x) = y
-appPi instIrrInfo y (irrv x) = y
+appPi instRelInfo y (relv x) = y {{x}}
+appPi instIrrInfo y (irrv x) = y {{x}}
 
 RelEq : ∀ {α} -> Relevance -> Set α -> Set α
 RelEq rel A = Eq A
@@ -203,20 +206,20 @@ isRelevant : Relevance -> Bool
 isRelevant rel = true
 isRelevant irr = false
 
-argInfo : ∀ {A} -> Arg A -> _
+argInfo : ∀ {α} {A : Set α} -> Arg A -> _
 argInfo (arg i x) = i
 
-argVal : ∀ {A} -> Arg A -> A
+argVal : ∀ {α} {A : Set α} -> Arg A -> A
 argVal (arg i x) = x
 
-unExpl : ∀ {A} -> Arg A -> Maybe A
+unExpl : ∀ {α} {A : Set α} -> Arg A -> Maybe A
 unExpl (explArg r x) = just x
 unExpl  _            = nothing
 
-absName : ∀ {A} -> Abs A -> String
+absName : ∀ {α} {A : Set α} -> Abs A -> String
 absName (abs s x) = s
 
-absVal : ∀ {A} -> Abs A -> A
+absVal : ∀ {α} {A : Set α} -> Abs A -> A
 absVal (abs s x) = x
 
 patVars : List String -> List (Arg Pattern)
@@ -248,20 +251,20 @@ instance
         go (relv x) (relv y) = dcong relv relv-inj (x ≟ y)
         go (irrv x) (irrv y) = yes refl
 
-  ArgFunctor : RawFunctor Arg
+  ArgFunctor : ∀ {α} -> RawFunctor {α} Arg
   ArgFunctor = record
     { _<$>_ = λ{ f (arg i x) -> arg i (f x) }
     }
 
-  AbsFunctor : RawFunctor Abs
+  AbsFunctor : ∀ {α} -> RawFunctor {α} Abs
   AbsFunctor = record
     { _<$>_ = λ{ f (abs s x) -> abs s (f x) }
     }
 
   TCMonad : ∀ {α} -> RawMonad {α} TC
   TCMonad = record
-    { return = returnTC
-    ; _>>=_  = bindTC
+    { return = Reflection.return
+    ; _>>=_  = Reflection._>>=_
     }
 
   TCApplicative : ∀ {α} -> RawApplicative {α} TC

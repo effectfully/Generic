@@ -23,7 +23,7 @@ varView  D      = no-var
 mutual
   Hyp : ∀ {ι β γ} {I : Set ι} {B}
       -> (∀ {i} -> B i -> Set γ) -> (D : Desc I β) -> ⟦ D ⟧ B -> Set (β ⊔ γ)
-  Hyp {β = β} C (var i)    y      = Lift {ℓ = β} (C y)
+  Hyp {β = β} C (var i)    y      = Lift β (C y)
   Hyp         C (π i q D)  f      = Hypᵇ i C D f
   Hyp         C (D ⊛ E)   (x , y) = Hyp C D x × Hyp C E y
 
@@ -38,8 +38,8 @@ mutual
        -> (D : Desc I β)
        -> (∀ {j} -> Extend D B j -> B j)
        -> Set (β ⊔ γ)
-  Elim {β = β} C (var i)   k = Lift {ℓ = β} (C (k lrefl))
-  Elim         C (π i q D) k = Elimᵇ i C D k 
+  Elim {β = β} C (var i)   k = Lift β (C (k lrefl))
+  Elim         C (π i q D) k = Elimᵇ i C D k
   Elim         C (D ⊛ E)   k with varView D
   ... | yes-var = ∀ {x} -> C x -> Elim C E (k ∘ _,_ x)
   ... | no-var  = ∀ {x} -> Hyp C D x -> Elim C E (k ∘ _,_ x)
@@ -85,7 +85,7 @@ module _ {ι β γ} {I : Set ι} {D₀ : Data (Desc I β)} (C : ∀ {j} -> μ D�
                  -> (e : Extend D (μ D₀) j)
                  -> C (k e)
       elimExtend (var i)   z  lrefl  = lower z
-      elimExtend (π i q D) h  p      = elimExtendᵇ i D h p 
+      elimExtend (π i q D) h  p      = elimExtendᵇ i D h p
       elimExtend (D ⊛ E)   h (d , e) with varView D
       ... | yes-var = elimExtend E (h (elim d))  e
       ... | no-var  = elimExtend E (h (elimHyp D d)) e

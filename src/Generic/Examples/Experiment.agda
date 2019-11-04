@@ -81,10 +81,9 @@ module Example1 where
   find : {A : Set} {{x : A}} -> A
   find {{x}} = x
 
-  -- Looks like Agda can't find the instance because of the implicit lambda bug:
-  -- `DataEq {{find}}` doesn't work.
-  test : _≟_ {{DataEq {{λ {_} -> find}}}} arose arose ≡ yes refl
-  test = refl
+  -- -- Instance search cannot be used to find elements in an explicit function type
+  -- test : _≟_ {{DataEq {{λ {_} -> find}}}} arose arose ≡ yes refl
+  -- test = refl
 
 module Example2 where
   -- If `A` is a parameter, then this definition would be strictly positive,

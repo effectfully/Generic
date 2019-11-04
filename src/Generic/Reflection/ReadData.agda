@@ -3,14 +3,14 @@ module Generic.Reflection.ReadData where
 open import Generic.Core
 open import Generic.Function.FoldMono
 
-‵π : Arg-info -> String -> Term -> Term -> Term 
+‵π : Arg-info -> String -> Term -> Term -> Term
 ‵π i s a b = sate π (reify i) (sate refl) ∘ sate coerce ∘ sate _,_ a $
   appDef (quote appRel) (implRelArg (reify (relevance i)) ∷ explRelArg (explLam s b) ∷ [])
 
 quoteHyp : Name -> ℕ -> Type -> Maybe (Maybe Term)
 quoteHyp d p   (pi s (arg i a) b) =
   quoteHyp d p a >>= maybe (const nothing) (fmap (‵π i s a) <$> quoteHyp d p b)
-quoteHyp d p t@(appDef n is)      = just $ d == n ?> sate var ∘ toTuple ∘ map argVal ∘ drop p $ is
+quoteHyp d p t@(appDef n is)      = just $ d == n ?> sate var (toTuple ∘ map argVal $ drop p is)
 quoteHyp d p t                    = just nothing
 
 quoteDesc : Name -> ℕ -> Type -> Maybe Term

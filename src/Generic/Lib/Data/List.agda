@@ -27,7 +27,7 @@ mapInd f (x ∷ xs) = f 0 x ∷ mapInd (f ∘ suc) xs
 
 mapM : ∀ {α β} {A : Set α} {B : Set β} {M : Set β -> Set β} {{mMonad : RawMonad M}}
      -> (A -> M B) -> List A -> M (List B)
-mapM {{mMonad}} = List.mapM mMonad
+mapM {{mMonad}} = List.TraversableM.mapM mMonad
 
 downFromTo : ℕ -> ℕ -> List ℕ
 downFromTo n m = map (m +_) (downFrom (n ∸ m))
@@ -98,5 +98,5 @@ lookupAllConst : ∀ {α β} {A : Set α} {B : Set β} {{bEq : Eq B}} {xs : List
                -> B -> All (const B) xs -> Maybe (∃ (_∈ xs))
 lookupAllConst {xs = []}     y  tt      = nothing
 lookupAllConst {xs = x ∷ xs} y (z , ys) = if y == z
-  then just (, phere xs)
+  then just (_ , phere xs)
   else second (there xs) <$> lookupAllConst y ys

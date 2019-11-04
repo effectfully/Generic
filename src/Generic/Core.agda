@@ -56,7 +56,7 @@ mutual
 
 mutual
   Extend : ∀ {ι β} {I : Set ι} -> Desc I β -> (I -> Set β) -> I -> Set β
-  Extend (var i)   B j = Lift (i ≡ j)
+  Extend (var i)   B j = Lift _ (i ≡ j)
   Extend (π i q C) B j = Extendᵇ i C q B j
   Extend (D ⊛ E)   B j = ⟦ D ⟧ B × Extend E B j
 

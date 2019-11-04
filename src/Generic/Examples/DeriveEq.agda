@@ -22,11 +22,7 @@ module DeriveEqVec where
   test₁ : xs ≟ xs ≡ yes refl
   test₁ = refl
 
-  -- Makes Agda loop?
-  -- test₂ : xs ≟ (2 ∷ᵥ 4 ∷ᵥ 2 ∷ᵥ []ᵥ) ≡ no _
-  -- test₂ = refl
-
-  test₂ : xs == (2 ∷ᵥ 4 ∷ᵥ 2 ∷ᵥ []ᵥ) ≡ false
+  test₂ : xs ≟ (2 ∷ᵥ 4 ∷ᵥ 2 ∷ᵥ []ᵥ) ≡ no _
   test₂ = refl
 
 module DeriveEqD where

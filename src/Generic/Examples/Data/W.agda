@@ -2,10 +2,11 @@ module Generic.Examples.Data.W where
 
 open import Generic.Main
 
-import Data.W as W
+data W′ {α β} (A : Set α) (B : A -> Set β) : Set (α ⊔ β) where
+  sup′ : ∀ {x} -> (B x -> W′ A B) -> W′ A B
 
 W : ∀ {α β} -> (A : Set α) -> (A -> Set β) -> Set (α ⊔ β)
-W = readData W.W
+W = readData W′
 
 pattern sup x g = !#₀ (relv x , g , lrefl)
 

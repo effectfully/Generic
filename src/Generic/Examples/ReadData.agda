@@ -6,7 +6,9 @@ data D {α β} (A : Set α) (B : ℕ -> Set β) : ∀ {n} -> B n -> List ℕ -> 
   c₁ : ∀ {n} (y : B n) xs -> A -> D A B y xs
   c₂ : ∀ {y : B 0} -> (∀ {n} (y : B n) {{xs}} -> D A B y xs) -> .(List A) -> D A B y []
 
-D′ : TypeOf D
+-- No longer works: Failed to solve the following constraints: Has bigger sort: Setω
+-- D′ : TypeOf D
+D′ : ∀ {α β} -> (A : Set α) -> (B : ℕ -> Set β) -> ∀ {n} -> B n -> List ℕ -> Set (α ⊔ β)
 D′ = readData D
 
 unquoteDecl foldD = deriveFoldTo foldD (quote D)
