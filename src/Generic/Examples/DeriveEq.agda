@@ -6,7 +6,7 @@ open import Data.Vec using (Vec) renaming ([] to []ᵥ; _∷_ to _∷ᵥ_)
 
 module DeriveEqStar where
   open import Relation.Binary
-  open import Data.Star
+  open import Relation.Binary.Construct.Closure.ReflexiveTransitive
 
   instance StarEq : ∀ {i t} {I : Set i} {T : Rel I t} {i j}
                       {{iEq : Eq I}} {{tEq : ∀ {i j} -> Eq (T i j)}} -> Eq (Star T i j)

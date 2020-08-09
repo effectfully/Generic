@@ -3,7 +3,7 @@ module Generic.Reflection.ReadData where
 open import Generic.Core
 open import Generic.Function.FoldMono
 
-‵π : Arg-info -> String -> Term -> Term -> Term
+‵π : ArgInfo -> String -> Term -> Term -> Term
 ‵π i s a b = sate π (reify i) (sate refl) ∘ sate coerce ∘ sate _,_ a $
   appDef (quote appRel) (implRelArg (reify (relevance i)) ∷ explRelArg (explLam s b) ∷ [])
 

@@ -1,6 +1,6 @@
 module Generic.Examples.Data.Product where
 
-open import Generic.Main as Main hiding (Σ; proj₁; proj₂) renaming (_,_ to _,′_)
+open import Generic.Main as Main hiding (Σ; proj₁; proj₂; _,′_) renaming (_,_ to _,′_)
 
 infixr 4 _,_
 

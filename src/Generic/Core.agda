@@ -12,7 +12,7 @@ _≤ℓ_ : Level -> Level -> Set
 α ≤ℓ β = α ⊔ β ≡ β
 
 mutual
-  Binder : ∀ {ι} α β γ -> Arg-info -> ι ⊔ lsuc (α ⊔ β) ≡ γ -> Set ι -> Set γ
+  Binder : ∀ {ι} α β γ -> ArgInfo -> ι ⊔ lsuc (α ⊔ β) ≡ γ -> Set ι -> Set γ
   Binder α β γ i q I = Coerce q (∃ λ (A : Set α) -> < relevance i > A -> Desc I β)
 
   data Desc {ι} (I : Set ι) β : Set (ι ⊔ lsuc β) where

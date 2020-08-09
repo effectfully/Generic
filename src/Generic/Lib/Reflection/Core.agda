@@ -1,13 +1,16 @@
 module Generic.Lib.Reflection.Core where
 
+open import Agda.Builtin.Reflection using (withNormalisation; Relevance; Visibility; clause) public
 open import Reflection
   renaming (visible to expl; hidden to impl; instance′ to inst;
     relevant to rel; irrelevant to irr; pi to absPi; lam to absLam; def to appDef)
-  hiding (var; con; meta; _≟_; return; _>>=_; _>>_) public
-open import Agda.Builtin.Reflection using (withNormalisation) public
+  hiding (Arg-info; var; con; meta; visibility; relevance; _≟_; return; _>>=_; _>>_) public
+open import Reflection.Argument.Information using (ArgInfo; visibility; relevance) public
+import Reflection.Name
 open Term    using () renaming (var to appVar; con to appCon; meta to appMeta) public
 open Pattern using () renaming (var to patVar; con to patCon) public
 open Literal using () renaming (meta to litMeta) public
+open Sort public
 
 open import Generic.Lib.Intro
 open import Generic.Lib.Equality.Propositional
@@ -238,7 +241,7 @@ open Data public
 
 instance
   NameEq : Eq Name
-  NameEq = viaBase _≟-Name_
+  NameEq = viaBase Reflection.Name._≟_
 
   EqRelValue : ∀ {α r} {A : Set α} {{aEq : RelEq r A}} -> Eq (< r > A)
   EqRelValue {A = A} {{aEq}} = record
@@ -286,7 +289,7 @@ mutual
   ren ι (lam v s t)     = lam v s (ren (keep ι) t)
   ren ι (pat-lam cs xs) = undefined where postulate undefined : _
   ren ι (pi s a b)      = pi s (ren ι <$> a) (ren (keep ι) b)
-  ren ι (sort s)        = sort (renSort ι s)
+  ren ι (agda-sort s)   = agda-sort (renSort ι s)
   ren ι (lit l)         = lit l
   ren ι (appMeta x xs)  = appMeta x (rens ι xs)
   ren ι  unknown        = unknown
@@ -322,7 +325,7 @@ mutual
   mapName f n (lam v s t)     = lam v s (mapName (f ∘ suc) n t)
   mapName f n (pat-lam cs xs) = undefined where postulate undefined : _
   mapName f n (pi s a b)      = pi s (mapName f n <$> a) (mapName (f ∘ suc) n b)
-  mapName f n (sort s)        = sort (mapNameSort f n s)
+  mapName f n (agda-sort s)   = agda-sort (mapNameSort f n s)
   mapName f n (lit l)         = lit l
   mapName f n (appMeta x xs)  = appMeta x (mapNames f n xs)
   mapName f n  unknown        = unknown
@@ -424,8 +427,8 @@ macro
     getType f >>= λ a ->
     let res = λ app -> quoteTC (vis# (countExplPis a) app f) >>= unify ?r in
     getDefinition f >>= λ
-      { (constructor′ _) -> res appCon
-      ;  _               -> res appDef
+      { (data-cons _) -> res appCon
+      ;  _            -> res appDef
       }
 
   sateMacro : Name -> Term -> TC _
@@ -442,9 +445,9 @@ unshift′ t = explLam "_" t · sate tt₀
 -- A note for myself: `foldℕ (sate lsuc) (sate lzero) n` is not `reify n`:
 -- it's damn `lsuc` -- not `suc`.
 termLevelOf : Term -> Maybe Term
-termLevelOf (sort (set t)) = just t
-termLevelOf (sort (lit n)) = just (foldℕ (sate lsuc) (sate lzero) n)
-termLevelOf (sort unknown) = just unknown
+termLevelOf (agda-sort (set t)) = just t
+termLevelOf (agda-sort (lit n)) = just (foldℕ (sate lsuc) (sate lzero) n)
+termLevelOf (agda-sort unknown) = just unknown
 termLevelOf _ = nothing
 
 instance
@@ -475,7 +478,7 @@ instance
         }
     }
 
-  ArgInfoReify : Reify Arg-info
+  ArgInfoReify : Reify ArgInfo
   ArgInfoReify = record
     { reify = λ{ (arg-info v r) -> sate arg-info (reify v) (reify r) }
     }
@@ -547,11 +550,11 @@ getData d = getNormType d >>= λ ab -> getDefinition d >>= λ
            {  nothing             -> panic "getData: data"
            ; (just (a , b , acs)) -> return ∘ uncurry (packData d a b) $ splitList acs
            }
-  ; (record′ c _)    -> getNormType c >>= dropPis (countPis ab) >>> λ
+  ; (record-type c _) -> getNormType c >>= dropPis (countPis ab) >>> λ
        {  nothing  -> panic "getData: record"
        ; (just a′) -> return $ packData d (initType ab) (lastType ab) (a′ ∷ []) (c , tt)
        }
-  ;  _               -> throw "not a data"
+  ;  _ -> throw "not a data"
   }
 
 macro

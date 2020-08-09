@@ -2,6 +2,8 @@
 
 It's a library for doing generic programming in Agda.
 
+The library is tested with Agda-2.6.1 and likely does not work with other versions of Agda.
+
 # A quick taste
 
 Deriving decidable equality for vectors:
@@ -31,8 +33,6 @@ instance StarEq : ∀ {i t} {I : Set i} {T : Rel I t} {i j}
                     {{iEq : Eq I}} {{tEq : ∀ {i j} -> Eq (T i j)}} -> Eq (Star T i j)
 unquoteDef StarEq = deriveEqTo StarEq (quote Star)
 ```
-
-(For this to type check you need the recent development version of Agda (as of 09.08.16))
 
 # Internally
 
@@ -216,7 +216,9 @@ There are also generic `elim` in [`Function/Elim.agda`](Function/Elim.agda) (the
 
 # Limitations
 
-- No inductive-inductive or inductive-recursive data types. The latter [can be done](https://github.com/effectfully/random-stuff/blob/master/Desc/IRDesc.agda) at the cost of complicating the encoding.
+- No support for mutually recursive data types. They can be supported, I just haven't implemented that.
+
+- No support for inductive-inductive or inductive-recursive data types. The latter [can be done](https://github.com/effectfully/random-stuff/blob/master/Desc/IRDesc.agda) at the cost of complicating the encoding.
 
 - No coinduction.
 
