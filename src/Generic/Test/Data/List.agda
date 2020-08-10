@@ -1,4 +1,4 @@
-module Generic.Examples.Data.List where
+module Generic.Test.Data.List where
 
 module _ where
   open import Generic.Main as Main hiding ([]; _∷_) renaming (List to StdList)
@@ -26,13 +26,13 @@ module _ where
   toStdList : ∀ {α} {A : Set α} -> List A -> StdList A
   toStdList xs = guncoerce xs
 
--- The entire content of `Data.List.Base` (modulo `Generic.Examples.Data.Maybe` instead of
+-- The entire content of `Data.List.Base` (modulo `Generic.Test.Data.Maybe` instead of
 -- `Data.Maybe.Base` and _∷_ was renamed to _∷′_ in some places)
 
 open import Data.Nat.Base using (ℕ; zero; suc; _+_; _*_)
 open import Data.Sum as Sum using (_⊎_; inj₁; inj₂)
 open import Data.Bool.Base using (Bool; false; true; not; _∧_; _∨_; if_then_else_)
-open import Generic.Examples.Data.Maybe
+open import Generic.Test.Data.Maybe
 open import Data.Product as Prod using (_×_; _,_)
 open import Function
 

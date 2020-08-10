@@ -1,9 +1,9 @@
-module Generic.Examples.Reify where
+module Generic.Test.Reify where
 
 open import Generic.Core
 open import Generic.Property.Reify
-open import Generic.Examples.Data.Fin
-open import Generic.Examples.Data.Vec
+open import Generic.Test.Data.Fin
+open import Generic.Test.Data.Vec
 
 open import Data.Fin renaming (Fin to StdFin)
 open import Data.Vec renaming (Vec to StdVec)

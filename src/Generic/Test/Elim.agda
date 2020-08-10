@@ -1,8 +1,8 @@
-module Generic.Examples.Elim where
+module Generic.Test.Elim where
 
 open import Generic.Core
 open import Generic.Function.Elim
-open import Generic.Examples.Data.Vec
+open import Generic.Test.Data.Vec
 
 -- Is it possible to get rid of these `lift`s?
 elimVec′ : ∀ {n α π} {A : Set α}

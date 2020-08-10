@@ -1,4 +1,4 @@
-module Generic.Examples.DeriveEq where
+module Generic.Test.DeriveEq where
 
 open import Generic.Main
 

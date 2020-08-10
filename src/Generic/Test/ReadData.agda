@@ -1,4 +1,4 @@
-module Generic.Examples.ReadData where
+module Generic.Test.ReadData where
 
 open import Generic.Main
 

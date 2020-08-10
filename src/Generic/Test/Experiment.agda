@@ -1,6 +1,6 @@
 {-# OPTIONS --type-in-type #-}
 
-module Generic.Examples.Experiment where
+module Generic.Test.Experiment where
 
 open import Generic.Lib.Prelude
 

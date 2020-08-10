@@ -1,4 +1,4 @@
-module Generic.Examples.Data.Product where
+module Generic.Test.Data.Product where
 
 open import Generic.Main as Main hiding (Σ; proj₁; proj₂; _,′_) renaming (_,_ to _,′_)
 
