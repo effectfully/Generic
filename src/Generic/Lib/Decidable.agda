@@ -24,7 +24,7 @@ record Eq {α} (A : Set α) : Set α where
   field _≟_ : IsSet A
 
   _==_ : A -> A -> Bool
-  x == y = ⌊ x ≟ y ⌋ 
+  x == y = ⌊ x ≟ y ⌋
 open Eq {{...}} public
 
 record _↦_ {α} (A B : Set α) : Set α where
@@ -70,11 +70,11 @@ prodM2 h f g d e = drec (λ x -> drec (h x) g e) f d
 
 sumF2 : ∀ {α β γ} {A : Set α} {B : Set β} {C : Set γ}
       -> (A -> C) -> (B -> C) -> (¬ A -> ¬ B -> ¬ C) -> Dec A -> Dec B -> Dec C
-sumF2 f g h = sumM2 (yes ∘ f) (yes ∘ g) (no % ∘ h) 
+sumF2 f g h = sumM2 (yes ∘ f) (yes ∘ g) (no % ∘ h)
 
 prodF2 : ∀ {α β γ} {A : Set α} {B : Set β} {C : Set γ}
        -> (A -> B -> C) -> (¬ A -> ¬ C) -> (¬ B -> ¬ C) -> Dec A -> Dec B -> Dec C
-prodF2 h f g = prodM2 (yes % ∘ h) (no ∘ f) (no ∘ g) 
+prodF2 h f g = prodM2 (yes % ∘ h) (no ∘ f) (no ∘ g)
 
 dcong : ∀ {α β} {A : Set α} {B : Set β} {x y}
       -> (f : A -> B) -> (f x ≡ f y -> x ≡ y) -> x # y -> f x # f y
@@ -89,7 +89,7 @@ dcong₂ : ∀ {α β γ} {A : Set α} {B : Set β} {C : Set γ} {x₁ x₂ y₁
 dcong₂ f inj = prodF2 (cong₂ f) (λ c -> c ∘ proj₁ ∘ inj) (λ c -> c ∘ proj₂ ∘ inj)
 
 dhcong₂ : ∀ {α β γ} {A : Set α} {B : A -> Set β} {C : Set γ} {x₁ x₂ y₁ y₂}
-        -> (f : ∀ x -> B x -> C) 
+        -> (f : ∀ x -> B x -> C)
         -> (f x₁ y₁ ≡ f x₂ y₂ -> [ B ] y₁ ≅ y₂)
         -> x₁ # x₂
         -> (∀ y₂ -> y₁ # y₂)

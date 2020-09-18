@@ -1,6 +1,6 @@
 module Generic.Lib.Data.Product where
 
-open import Data.Product renaming (map to pmap; zip to pzip) hiding (map₁; map₂) public
+open import Data.Product renaming (map to pmap; zip to pzip) hiding (map₁; map₂; dmap; _<*>_; assocʳ; assocˡ) public
 
 open import Generic.Lib.Intro
 open import Generic.Lib.Category
