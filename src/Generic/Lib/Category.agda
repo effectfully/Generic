@@ -1,6 +1,6 @@
 module Generic.Lib.Category where
 
-open import Category.Functor public
+open import Category.Functor public hiding (Morphism)
 open import Category.Applicative public
 open import Category.Monad public
 
