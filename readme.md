@@ -2,7 +2,7 @@
 
 It's a library for doing generic programming in Agda.
 
-The library is tested with Agda-2.6.1 and likely does not work with other versions of Agda.
+The library is tested with Agda-2.6.1 and Agda-2.6.1.2 and likely does not work with other versions of Agda.
 
 # A quick taste
 
